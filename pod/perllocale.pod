@@ -1698,7 +1698,7 @@ one such library.
 An XS module that is locale-dependent could have been written under the
 assumption that it will never be called in a multi-threaded environment,
 and so uses other non-locale constructs that aren't multi-thread-safe.
-See L<perlxs/Thread-aware system interfaces>.
+See L<perlxs/Dealing with MULTIPLICITY and threads>.
 
 POSIX does not define a way to get the name of the current per-thread
 locale.  Some systems, such as Darwin and FreeBSD do implement a
