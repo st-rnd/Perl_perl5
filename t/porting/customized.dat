@@ -15,4 +15,4 @@ Time::Piece cpan/Time-Piece/Piece.xs 543152540ee17788a638b2c5746b86c3d04401d1
 Win32API::File cpan/Win32API-File/File.pm 8fd212857f821cb26648878b96e57f13bf21b99e
 Win32API::File cpan/Win32API-File/File.xs beb870fed4490d2faa547b4a8576b8d64d1d27c5
 version cpan/version/lib/version.pm a963b513cf812bd7f4d28b3422efd9904e70a34c
-version cpan/version/t/07locale.t 889f83b3efd52fed133d0a1483cade2bfa0ad6f1
+version cpan/version/t/07locale.t 7a47cf3021b1b306b5f99ec6eceacdc7626af579
