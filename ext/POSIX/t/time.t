@@ -9,7 +9,8 @@ use strict;
 
 use Config;
 use POSIX;
-use Test::More tests => 25;
+use if   defined $Config{d_strftime}, "Test::More", tests => 25;
+use if ! defined $Config{d_strftime}, "Test::More", skip_all => "No strftime";
 
 # go to UTC to avoid DST issues around the world when testing.  SUS3 says that
 # null should get you UTC, but some environments want the explicit names.
