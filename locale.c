@@ -2115,6 +2115,9 @@ S_bool_setlocale_emulate_safe_i(pTHX_
 
     /* Set XXX the locale to 'wanted_locale' for the category given by our internal
      * index number, and save the result for later use. */
+    DEBUG_U(PerlIO_printf( Perl_debug_log, "unlocked, setting %s to %s\n",
+                           category_names[index],
+                           wanted_locale));
 
     bool free_new_locale = false;
     const char * new_locale;
@@ -2156,6 +2159,7 @@ S_bool_setlocale_emulate_safe_i(pTHX_
         Safefree(cur_locale);
         free_new_locale = true;
     }
+    DEBUG_U(PerlIO_printf( Perl_debug_log, "finished set %d to %s\n", categories[index], wanted_locale));
 
     update_PL_curlocales_i(index, new_locale, caller_line);
     if (free_new_locale) {
@@ -2330,7 +2334,25 @@ Perl_category_lock(pTHX_ const UV mask,
         }
 
 #  endif
-
+#  if 0
+            DEBUG_U(PerlIO_printf( Perl_debug_log,
+                    "\nPL_numeric_toggle_depth=%d\n"
+                    "PL_numeric_underlying_is_standard=%d\n"
+                    "PL_numeric_underlying=%d\n"
+                    "PL_numeric_standard=%d\n"
+                    "NOT_IN_NUMERIC_UNDERLYING_=%d\n"
+                    "PL_curlocales[i]=%s\n"
+                    "PL_numeric_name=%s\n",
+                    PL_NUMERIC_toggle_depth,
+                    PL_numeric_underlying_is_standard,
+                    PL_numeric_underlying,
+                    PL_numeric_standard,
+                    NOT_IN_NUMERIC_UNDERLYING_,
+                    PL_curlocales[cat_index],
+                    PL_numeric_name));
+            }
+        }
+#  endif
         assert(wanted);
 
         DEBUG_U(PerlIO_printf(Perl_debug_log,
