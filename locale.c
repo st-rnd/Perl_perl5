@@ -2172,7 +2172,7 @@ S_bool_setlocale_emulate_safe_i(pTHX_
  * XXX PL_NUMERIC_toggle_depth is used */
 #  define TOGGLING_LOCKS  1
 #  define DEBUG_TOGGLE(i)                                                   \
-        DEBUG_Lv(PerlIO_printf(Perl_debug_log,                              \
+        DEBUG_U (PerlIO_printf(Perl_debug_log,                              \
                                "new depth=%zd, index=%d, caller=%" LINE_Tf  \
                                "\n", PL_locale_toggle_depth[i], i, __LINE__))
 #  define TOGGLE_LOCK(i)                                                    \
@@ -2244,7 +2244,7 @@ Perl_category_lock(pTHX_ const UV mask,
 #  endif
 
     if (UNLIKELY(! PL_perl_controls_locale)) {
-        DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+        DEBUG_U(PerlIO_printf(Perl_debug_log,
                                "Entering category_lock but outside of perl"
                                " controlling the locale: nothing done;"
                                " called from %s: %d\n", file, caller_line));
@@ -2252,7 +2252,7 @@ Perl_category_lock(pTHX_ const UV mask,
         return;
     }
 
-    DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+    DEBUG_U(PerlIO_printf(Perl_debug_log,
                            "Entering category_lock; mask=%" UVxf
                            ", called from %s: %d\n", mask, file, caller_line));
 
@@ -2278,7 +2278,7 @@ Perl_category_lock(pTHX_ const UV mask,
                               = (locale_category_index) lsbit_pos(working_mask);
         working_mask &= ~ (1 << cat_index);
 
-        DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+        DEBUG_U(PerlIO_printf(Perl_debug_log,
                                "category_lock; processing %s\n",
                                category_names[cat_index]));
 
@@ -2333,7 +2333,7 @@ Perl_category_lock(pTHX_ const UV mask,
 
         assert(wanted);
 
-        DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+        DEBUG_U(PerlIO_printf(Perl_debug_log,
                                "%s: wanted=%s\n",
                                category_names[cat_index], wanted));
 
@@ -2344,7 +2344,7 @@ Perl_category_lock(pTHX_ const UV mask,
         /* If we aren't in the desired locale, change to it, saving a copy of
          * the one we actually are in before the change */
         if (strNE(currently, wanted)) {
-            DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+            DEBUG_U(PerlIO_printf(Perl_debug_log,
                      "%s:%d: Calling setlocale(%d, %s)\n", file, caller_line,
                      cat, wanted));
             if (stdized_setlocale(cat, wanted) == NULL) {
@@ -2354,7 +2354,7 @@ Perl_category_lock(pTHX_ const UV mask,
             }
         }
         else {
-            DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+            DEBUG_U(PerlIO_printf(Perl_debug_log,
                     "%s: %d: Category %d already was %s\n",
                     file, caller_line, cat, wanted));
         }
@@ -2380,14 +2380,14 @@ Perl_category_lock(pTHX_ const UV mask,
         /* Indicate our new recursion depth */
         PL_restore_locale_depth[cat_index]++;
 
-        DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+        DEBUG_U(PerlIO_printf(Perl_debug_log,
                                "%s:%d: PL_restore is now %s,"
                                " recursion depth=%zu\n",
                                file, caller_line, PL_restore_locale[cat_index],
                                PL_restore_locale_depth[cat_index]));
     }
 
-    DEBUG_Lv(PerlIO_printf(Perl_debug_log, "Leaving category_lock\n"));
+    DEBUG_U(PerlIO_printf(Perl_debug_log, "Leaving category_lock\n"));
 
     RESTORE_ERRNO;
 }
@@ -2411,7 +2411,7 @@ Perl_category_unlock(pTHX_ const UV mask,
 #  endif
 
     if (UNLIKELY(! PL_perl_controls_locale)) {
-        DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+        DEBUG_U(PerlIO_printf(Perl_debug_log,
                                "Entering category_unlock but outside of perl"
                                " controlling the locale: nothing done;"
                                " called from %s: %d\n", file, caller_line));
@@ -2419,7 +2419,7 @@ Perl_category_unlock(pTHX_ const UV mask,
         return;
     }
 
-    DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+    DEBUG_U(PerlIO_printf(Perl_debug_log,
                           "Entering category_unlock; mask=%" UVxf
                           ", called from %s: %d\n", mask, file, caller_line));
 
@@ -2438,7 +2438,7 @@ Perl_category_unlock(pTHX_ const UV mask,
                               = (locale_category_index) lsbit_pos(working_mask);
         working_mask &= ~ (1 << cat_index);
 
-        DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+        DEBUG_U(PerlIO_printf(Perl_debug_log,
                                "category_unlock; processing %s\n",
                                category_names[cat_index]));
 
@@ -2458,7 +2458,7 @@ Perl_category_unlock(pTHX_ const UV mask,
 
             /* If we need to change, do it */
             if (strNE(currently, wanted)) {
-                DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+                DEBUG_U(PerlIO_printf(Perl_debug_log,
                          "%s:%d: Calling setlocale(%d, %s)\n",
                          file, caller_line, cat, wanted));
                 if (stdized_setlocale(cat, wanted) == NULL) {
@@ -2470,7 +2470,7 @@ Perl_category_unlock(pTHX_ const UV mask,
                 }
             }
             else {
-                DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+                DEBUG_U(PerlIO_printf(Perl_debug_log,
                         "%s: %d: Category %d already was %s\n",
                         file, caller_line, cat, wanted));
             }
@@ -2483,7 +2483,7 @@ Perl_category_unlock(pTHX_ const UV mask,
     /* Doesn't actually unlock until recursion fully unwound */
     gwLOCALE_UNLOCK;
 
-    DEBUG_Lv(PerlIO_printf(Perl_debug_log, "Leaving category_unlock\n"));
+    DEBUG_U(PerlIO_printf(Perl_debug_log, "Leaving category_unlock\n"));
 
     RESTORE_ERRNO;
 }
