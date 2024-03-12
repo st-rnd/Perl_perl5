@@ -15,135 +15,136 @@
 
 /* This file contains macros to wrap their respective function calls to ensure
  * that those calls are thread-safe in a multi-threaded environment.
- * 
+ *
  * Most libc functions are already thread-safe without these wrappers, so do
  * not appear here.  The functions that are known to have multi-thread issues
  * are:
  *
- * addmntent             gethostbyname2      iswgraph           setusershell
- * alphasort             gethostbyname2_r    iswgraph_l         setutent
- * asctime               gethostbyname_r     iswlower           setutxent
- * asctime_r             gethostent          iswlower_l         sgetspent
- * asprintf              gethostent_r        iswprint           sgetspent_r
- * atof                  gethostid           iswprint_l         shm_open
- * atoi                  getlogin            iswpunct           shm_unlink
- * atol                  getlogin_r          iswpunct_l         siginterrupt
- * atoll                 getmntent           iswspace           sleep
- * basename              getmntent_r         iswspace_l         snprintf
- * btowc                 getnameinfo         iswupper           sprintf
- * catgets               getnetbyaddr        iswupper_l         srand48
- * catopen               getnetbyaddr_r      iswxdigit          srand48_r
- * clearenv              getnetbyname        iswxdigit_l        srandom_r
- * clearerr_unlocked     getnetbyname_r      isxdigit           sscanf
- * crypt                 getnetent           isxdigit_l         ssignal
- * crypt_gensalt         getnetent_r         jrand48            strcasecmp
- * ctime                 getnetgrent         jrand48_r          strcasestr
- * ctime_r               getnetgrent_r       l64a               strcoll
- * cuserid               getopt              lcong48            strerror
- * dbm_clearerr          getopt_long         lcong48_r          strerror_l
- * dbm_close             getopt_long_only    lgamma             strerror_r
- * dbm_delete            getpass             lgammaf            strfmon
- * dbm_error             getprotobyname      lgammal            strfmon_l
- * dbm_fetch             getprotobyname_r    localeconv         strfromd
- * dbm_firstkey          getprotobynumber    localtime          strfromf
- * dbm_nextkey           getprotobynumber_r  localtime_r        strfroml
- * dbm_open              getprotoent         login              strftime
- * dbm_store             getprotoent_r       login_tty          strftime_l
- * dirname               getpw               logout             strncasecmp
- * dlerror               getpwent            logwtmp            strptime
- * dprintf               getpwent_r          lrand48            strsignal
- * drand48               getpwnam            lrand48_r          strtod
- * drand48_r             getpwnam_r          makecontext        strtof
- * ecvt                  getpwuid            mallinfo           strtoimax
- * encrypt               getpwuid_r          MB_CUR_MAX         strtok
- * endaliasent           getrpcbyname        mblen              strtol
- * endfsent              getrpcbyname_r      mbrlen             strtold
- * endgrent              getrpcbynumber      mbrtowc            strtoll
- * endhostent            getrpcbynumber_r    mbsinit            strtoq
- * endnetent             getrpcent           mbsnrtowcs         strtoul
- * endnetgrent           getrpcent_r         mbsrtowcs          strtoull
- * endprotoent           getrpcport          mbstowcs           strtoumax
- * endpwent              getservbyname       mbtowc             strtouq
- * endrpcent             getservbyname_r     mcheck             strverscmp
- * endservent            getservbyport       mcheck_check_all   strxfrm
- * endspent              getservbyport_r     mcheck_pedantic    swapcontext
- * endttyent             getservent          mktime             swprintf
- * endusershell          getservent_r        mprobe             swscanf
- * endutent              getspent            mrand48            sysconf
- * endutxent             getspent_r          mrand48_r          syslog
- * erand48               getspnam            mtrace             tdelete
- * erand48_r             getspnam_r          muntrace           tempnam
- * err                   getttyent           newlocale          tfind
- * error                 getttynam           nftw               timegm
- * error_at_line         getusershell        nl_langinfo        timelocal
- * errx                  getutent            nrand48            tmpnam
- * ether_aton            getutid             nrand48_r          tolower
- * ether_ntoa            getutline           openpty            tolower_l
- * execlp                getutxent           perror             toupper
- * execvp                getutxid            posix_fallocate    toupper_l
- * execvpe               getwc               printf             towctrans
- * exit                  getwchar            profil             towlower
- * __fbufsize            getwchar_unlocked   psiginfo           towlower_l
- * fcloseall             getwc_unlocked      psignal            towupper
- * fcvt                  glob                ptsname            towupper_l
- * fflush_unlocked       gmtime              putchar_unlocked   tsearch
- * fgetc_unlocked        gmtime_r            putc_unlocked      ttyname
- * fgetgrent             grantpt             putenv             ttyslot
- * fgetpwent             hcreate             putpwent           twalk
- * fgetspent             hcreate_r           putspent           twalk_r
- * fgets_unlocked        hdestroy            pututline          tzset
- * fgetwc                hdestroy_r          pututxline         unsetenv
- * fgetwc_unlocked       hsearch             putwc              updwtmp
- * fgetws                hsearch_r           putwchar           utmpname
- * fgetws_unlocked       iconv               putwchar_unlocked  va_arg
- * fnmatch               iconv_open          putwc_unlocked     valloc
- * forkpty               inet_addr           pvalloc            vasprintf
- * __fpending            inet_aton           qecvt              vdprintf
- * fprintf               inet_network        qfcvt              verr
- * __fpurge              inet_ntoa           random_r           verrx
- * fputc_unlocked        inet_ntop           rcmd               versionsort
- * fputs_unlocked        inet_pton           rcmd_af            vfprintf
- * fputwc                initgroups          readdir            vfscanf
- * fputwc_unlocked       initstate_r         re_comp            vfwprintf
- * fputws                innetgr             re_exec            vprintf
- * fputws_unlocked       iruserok            regcomp            vscanf
- * fread_unlocked        iruserok_af         regerror           vsnprintf
- * fscanf                isalnum             regexec            vsprintf
- * __fsetlocking         isalnum_l           res_nclose         vsscanf
- * fts_children          isalpha             res_ninit          vswprintf
- * fts_read              isalpha_l           res_nquery         vsyslog
- * ftw                   isascii             res_nquerydomain   vwarn
- * fwprintf              isascii_l           res_nsearch        vwarnx
- * fwrite_unlocked       isblank             res_nsend          vwprintf
- * fwscanf               isblank_l           rexec              warn
- * gamma                 iscntrl             rexec_af           warnx
- * gammaf                iscntrl_l           rpmatch            wcrtomb
- * gammal                isdigit             ruserok            wcscasecmp
- * getaddrinfo           isdigit_l           ruserok_af         wcschr
- * getaliasbyname        isgraph             scandir            wcscoll
- * getaliasbyname_r      isgraph_l           scanf              wcsftime
- * getaliasent           islower             secure_getenv      wcsncasecmp
- * getaliasent_r         islower_l           seed48             wcsnrtombs
- * getchar_unlocked      isprint             seed48_r           wcsrchr
- * getcontext            isprint_l           setaliasent        wcsrtombs
- * getc_unlocked         ispunct             setcontext         wcstod
- * get_current_dir_name  ispunct_l           setenv             wcstof
- * getdate               isspace             setfsent           wcstoimax
- * getdate_r             isspace_l           setgrent           wcstold
- * getenv                isupper             sethostent         wcstombs
- * getfsent              isupper_l           sethostid          wcstoumax
- * getfsfile             iswalnum            setkey             wcswidth
- * getfsspec             iswalnum_l          setlocale          wcsxfrm
- * getgrent              iswalpha            setlogmask         wctob
- * getgrent_r            iswalpha_l          setnetent          wctomb
- * getgrgid              iswascii            setnetgrent        wctrans
- * getgrgid_r            iswascii_l          setprotoent        wctype
- * getgrnam              iswblank            setpwent           wcwidth
- * getgrnam_r            iswblank_l          setrpcent          wordexp
- * getgrouplist          iswcntrl            setservent         wprintf
- * gethostbyaddr         iswcntrl_l          setspent           wscanf
- * gethostbyaddr_r       iswdigit            setstate_r         
- * gethostbyname         iswdigit_l          setttyent          
+ * addmntent             gethostbyname2      iswlower           setttyent
+ * alphasort             gethostbyname2_r    iswlower_l         setusershell
+ * asctime               gethostbyname_r     iswprint           setutent
+ * asctime_r             gethostent          iswprint_l         setutxent
+ * asprintf              gethostent_r        iswpunct           sgetspent
+ * atof                  gethostid           iswpunct_l         sgetspent_r
+ * atoi                  getlogin            iswspace           shm_open
+ * atol                  getlogin_r          iswspace_l         shm_unlink
+ * atoll                 getmntent           iswupper           siginterrupt
+ * basename              getmntent_r         iswupper_l         sleep
+ * btowc                 getnameinfo         iswxdigit          snprintf
+ * catgets               getnetbyaddr        iswxdigit_l        sprintf
+ * catopen               getnetbyaddr_r      isxdigit           srand48
+ * clearenv              getnetbyname        isxdigit_l         srand48_r
+ * clearerr_unlocked     getnetbyname_r      jrand48            srandom_r
+ * crypt                 getnetent           jrand48_r          sscanf
+ * crypt_gensalt         getnetent_r         l64a               ssignal
+ * ctermid               getnetgrent         lcong48            strcasecmp
+ * ctime                 getnetgrent_r       lcong48_r          strcasestr
+ * ctime_r               getopt              lgamma             strcoll
+ * cuserid               getopt_long         lgammaf            strerror
+ * dbm_clearerr          getopt_long_only    lgammal            strerror_l
+ * dbm_close             getpass             localeconv         strerror_r
+ * dbm_delete            getprotobyname      localtime          strfmon
+ * dbm_error             getprotobyname_r    localtime_r        strfmon_l
+ * dbm_fetch             getprotobynumber    login              strfromd
+ * dbm_firstkey          getprotobynumber_r  login_tty          strfromf
+ * dbm_nextkey           getprotoent         logout             strfroml
+ * dbm_open              getprotoent_r       logwtmp            strftime
+ * dbm_store             getpw               lrand48            strftime_l
+ * dirname               getpwent            lrand48_r          strncasecmp
+ * dlerror               getpwent_r          makecontext        strptime
+ * dprintf               getpwnam            mallinfo           strsignal
+ * drand48               getpwnam_r          MB_CUR_MAX         strtod
+ * drand48_r             getpwuid            mblen              strtof
+ * ecvt                  getpwuid_r          mbrlen             strtoimax
+ * encrypt               getrpcbyname        mbrtowc            strtok
+ * endaliasent           getrpcbyname_r      mbsinit            strtol
+ * endfsent              getrpcbynumber      mbsnrtowcs         strtold
+ * endgrent              getrpcbynumber_r    mbsrtowcs          strtoll
+ * endhostent            getrpcent           mbstowcs           strtoq
+ * endnetent             getrpcent_r         mbtowc             strtoul
+ * endnetgrent           getrpcport          mcheck             strtoull
+ * endprotoent           getservbyname       mcheck_check_all   strtoumax
+ * endpwent              getservbyname_r     mcheck_pedantic    strtouq
+ * endrpcent             getservbyport       mktime             strverscmp
+ * endservent            getservbyport_r     mprobe             strxfrm
+ * endspent              getservent          mrand48            swapcontext
+ * endttyent             getservent_r        mrand48_r          swprintf
+ * endusershell          getspent            mtrace             swscanf
+ * endutent              getspent_r          muntrace           sysconf
+ * endutxent             getspnam            nan                syslog
+ * erand48               getspnam_r          nanf               system
+ * erand48_r             getttyent           nanl               tdelete
+ * err                   getttynam           newlocale          tempnam
+ * error                 getusershell        nftw               tfind
+ * error_at_line         getutent            nl_langinfo        timegm
+ * errx                  getutid             nrand48            timelocal
+ * ether_aton            getutline           nrand48_r          tmpnam
+ * ether_ntoa            getutxent           openpty            tolower
+ * execlp                getutxid            perror             tolower_l
+ * execvp                getutxline          posix_fallocate    toupper
+ * execvpe               getwc               printf             toupper_l
+ * exit                  getwchar            profil             towctrans
+ * __fbufsize            getwchar_unlocked   psiginfo           towlower
+ * fcloseall             getwc_unlocked      psignal            towlower_l
+ * fcvt                  glob                ptsname            towupper
+ * fflush_unlocked       gmtime              putchar_unlocked   towupper_l
+ * fgetc_unlocked        gmtime_r            putc_unlocked      tsearch
+ * fgetgrent             grantpt             putenv             ttyname
+ * fgetpwent             hcreate             putpwent           ttyslot
+ * fgetspent             hcreate_r           putspent           twalk
+ * fgets_unlocked        hdestroy            pututline          twalk_r
+ * fgetwc                hdestroy_r          pututxline         tzset
+ * fgetwc_unlocked       hsearch             putwc              ungetwc
+ * fgetws                hsearch_r           putwchar           unsetenv
+ * fgetws_unlocked       iconv               putwchar_unlocked  updwtmp
+ * fnmatch               iconv_open          putwc_unlocked     utmpname
+ * forkpty               inet_addr           pvalloc            va_arg
+ * __fpending            inet_aton           qecvt              valloc
+ * fprintf               inet_network        qfcvt              vasprintf
+ * __fpurge              inet_ntoa           rand               vdprintf
+ * fputc_unlocked        inet_ntop           random_r           verr
+ * fputs_unlocked        inet_pton           rcmd               verrx
+ * fputwc                initgroups          rcmd_af            versionsort
+ * fputwc_unlocked       initstate_r         readdir            vfprintf
+ * fputws                innetgr             re_comp            vfscanf
+ * fputws_unlocked       iruserok            re_exec            vfwprintf
+ * fread_unlocked        iruserok_af         regcomp            vprintf
+ * fscanf                isalnum             regerror           vscanf
+ * __fsetlocking         isalnum_l           regexec            vsnprintf
+ * fts_children          isalpha             res_nclose         vsprintf
+ * fts_read              isalpha_l           res_ninit          vsscanf
+ * ftw                   isascii             res_nquery         vswprintf
+ * fwprintf              isascii_l           res_nquerydomain   vsyslog
+ * fwrite_unlocked       isblank             res_nsearch        vwarn
+ * fwscanf               isblank_l           res_nsend          vwarnx
+ * gamma                 iscntrl             rexec              vwprintf
+ * gammaf                iscntrl_l           rexec_af           warn
+ * gammal                isdigit             rpmatch            warnx
+ * getaddrinfo           isdigit_l           ruserok            wcrtomb
+ * getaliasbyname        isgraph             ruserok_af         wcscasecmp
+ * getaliasbyname_r      isgraph_l           scandir            wcschr
+ * getaliasent           islower             scanf              wcscoll
+ * getaliasent_r         islower_l           secure_getenv      wcsftime
+ * getchar_unlocked      isprint             seed48             wcsncasecmp
+ * getcontext            isprint_l           seed48_r           wcsnrtombs
+ * getc_unlocked         ispunct             setaliasent        wcsrchr
+ * get_current_dir_name  ispunct_l           setcontext         wcsrtombs
+ * getdate               isspace             setenv             wcstod
+ * getdate_r             isspace_l           setfsent           wcstof
+ * getenv                isupper             setgrent           wcstoimax
+ * getfsent              isupper_l           sethostent         wcstold
+ * getfsfile             iswalnum            sethostid          wcstombs
+ * getfsspec             iswalnum_l          setkey             wcstoumax
+ * getgrent              iswalpha            setlocale          wcswidth
+ * getgrent_r            iswalpha_l          setlogmask         wcsxfrm
+ * getgrgid              iswblank            setnetent          wctob
+ * getgrgid_r            iswblank_l          setnetgrent        wctomb
+ * getgrnam              iswcntrl            setprotoent        wctrans
+ * getgrnam_r            iswcntrl_l          setpwent           wctype
+ * getgrouplist          iswdigit            setrpcent          wcwidth
+ * gethostbyaddr         iswdigit_l          setservent         wordexp
+ * gethostbyaddr_r       iswgraph            setspent           wprintf
+ * gethostbyname         iswgraph_l          setstate_r         wscanf
  *
  * If a function doesn't appear in the above list, perl thinks it is
  * thread-safe on all platforms.  If your experience is otherwise, add an
@@ -153,12 +154,11 @@
  * environment.  No wrapper macros are generated for these, which must be
  * called only during single-thread operation:
  *
- * endusershell    getaliasent     mcheck            profil   rexec_af
- * ether_aton      getrpcbyname    mcheck_check_all  rcmd     sethostid
- * ether_ntoa      getrpcbynumber  mcheck_pedantic   rcmd_af  setusershell
- * fts_children    getrpcent       mprobe            re_comp  siginterrupt
- * fts_read        getusershell    mtrace            re_exec  ttyslot
- * getaliasbyname  mallinfo        muntrace          rexec    
+ * endusershell  getaliasbyname  getusershell  rcmd_af   setusershell
+ * ether_aton    getaliasent     mtrace        re_comp   ttyslot
+ * ether_ntoa    getrpcbyname    muntrace      re_exec   
+ * fts_children  getrpcbynumber  profil        rexec     
+ * fts_read      getrpcent       rcmd          rexec_af  
  *
  * Some functions perform initialization on their first call that must be done
  * while still in a single-thread environment, but subsequent calls are
@@ -166,8 +166,8 @@
  * Therefore, they must be called at least once before switching to
  * multi-threads:
  *
- * getutent  getutline  getutxid  pvalloc  
- * getutid   getutxent  mallinfo  valloc   
+ * getutent  getutline  getutxid    mallinfo  valloc  
+ * getutid   getutxent  getutxline  pvalloc   
  *
  * Some functions use and/or modify a global state, such as a database.
  * The libc functions presume that there is only one thread at a time
@@ -183,94 +183,77 @@
  * duration of the call.  Comments at each definition tell what other
  * functions have races with that function.  Typically the functions that fall
  * into this class have races with other functions whose names begin with
- * "end", such as "endgrent()".
+ * "end", such as "endgrent()".  Other examples include pseudo-random number
+ * generators.  Some libc implementations of 'rand()', for example, may share
+ * the data across threads; and others may have per-thread data.  The shared
+ * ones will have unreproducible results, as the threads vary in their
+ * timings and interactions.  This may be what you want; or it may not be.
+ * (This particular function may be removed from the POSIX Standard because of
+ * these issues.)
  *
  * Other functions that output to a stream also are considered thread-unsafe
  * without locking.  but the typical consequences are just that the data is
- * output in unpredicatble ways, which may be totally acceptable.
+ * output in unpredictable ways, which may be totally acceptable.  However, it
+ * is beyond the scope of these macros to make sure that formatted output uses
+ * a non-dot radix decimal point.  Use the WITH_LC_NUMERIC_SET_TO_NEEDED()
+ * macro #defined in perl.h to accomplish this.
  *
  * The rest of the functions, when wrapped with their respective LOCK and
  * UNLOCK macros, should be thread-safe.
  *
- * However, ome of these are not thread-safe if called with arguments that
+ * However, some of these are not thread-safe if called with arguments that
  * don't comply with certain (easily-met) restrictions.  Those are commented
- * where their respective macros are #defined.
+ * where their respective macros are #defined.  The macros assume that the
+ * function is called with the appropriate restrictions.
  *
  * The macros here do not help in coping with asynchronous signals.  For
  * these, you need to see the vendor man pages.  The functions here known to
  * be vulnerable to signals are:
  *
- * getlogin    getutid    getutxid  logout     pututxline  wordexp  
- * getlogin_r  getutline  glob      logwtmp    sleep       
- * getutent    getutxent  login     pututline  updwtmp     
+ * getlogin    getutid    getutxid    login    pututline   updwtmp  
+ * getlogin_r  getutline  getutxline  logout   pututxline  wordexp  
+ * getutent    getutxent  glob        logwtmp  sleep       
  *
- * The macros here all should expand to no-ops when run from an unthreaded
- * perl.  Many also expand to no-ops on various other platforms and
- * Configurations.  They exist so you you don't have to worry about this.
+ * Some libc's implement 'system()' thread-safely.  But in others, it also
+ * has signal issues.
  *
- * The macros are designed to not result in deadlock, except deadlock WILL
- * occur if they are used in such a way that a thread tries to acquire a
- * write-lock on a mutex when it already holds a read-lock on that mutex.
- * This could be handled transparently (with significant extra overhead), but
- * applications don't tend to be written in such a way that this issue even
- * comes up.  Best practice is to call the LOCK macro; call the function and
- * copy the result to a per-thread place if that result points to a buffer
- * internal to libc; then UNLOCK it immediately.
+ * In theory, you should wrap every instance of every function listed here
+ * with its corresponding lock macros, except as noted above.  The macros here
+ * all should expand to no-ops when run from an unthreaded perl.  Many also
+ * expand to no-ops on various other platforms and Configurations.  They exist
+ * so you you don't have to worry about this.  Some definitions are no-ops in
+ * all current cases, but you should wrap their functions anyway, as future
+ * work likely will yield Configurations where they aren't just no-ops.
  *
- * The macros here are generated from an internal DATA section, populated from
- * information derived from the POSIX 2017 standard and Linux glibc section 3
- * man pages.  (Linux tends to have extra restrictions not in the Standard.)
- * The data can easily be adjusted as necessary.
+ * You may override any definitions here simply by #defining your own before
+ * #including this file.
  *
- * But beware that the Standard contains weasel words that could make
- * multi-thread safety a fiction, depending on the application.  .  Our
- * experience though is * that libc implementations don't take advantage of this
- * loophole, and the * macros here are written as if it didn't exist.  (See
- * https://stackoverflow.com/questions/78056645 )* The POSIX standard also says
+ * The macros are designed to not result in deadlock, but best practice is to
+ * call the LOCK macro; call the function and copy the result to a per-thread
+ * place if that result points to a buffer internal to libc; then UNLOCK it
+ * immediately.  Then act on the result.
  *
- *    A thread-safe function can be safely invoked concurrently with other
- *    calls to the same function, or with calls to any other thread-safe
- *    functions, by multiple threads. Each function defined in the System
- *    Interfaces volume of POSIX.1-2017 is thread-safe unless explicitly stated
- *    otherwise. Examples are any 'pure' function, a function which holds a
- *    mutex locked while it is accessing static storage or objects shared
- *    among threads.
- *
- * Note that this doesn't say anything about the behavior of a thread-safe
- * function when executing concurrently with a thread-unsafe function.  This
- * effectively gives permission for a libc implementation to make every
- * allegedly thread-safe function not thread-safe for circumstances outside the
- * control of the thread.  This would wreak havoc on a lot of code if
- * libc implementations took much advantage of this loophole.  But it is a
- * reason to avoid creating many mutexes.  Two threads are always thread-safe
- * if they lock on the same mutex.
- *
- * Another reason to minimize the number of mutexes is that each additional one
- * increases the possibility of deadklock, unless the code is (and remains
- * so during future maintenance) carefully crafted.
- *
- * There are other libc functions that reasonably could have their own mutex.
- * But for the above two reasons, and the expectation that these aren't used
- * all that often, that isn't currently done.  All of them share the locale
- * mutex.  For example, two concurrent threads executing ttyname() can have
- * races.  If benchmarks showed that creating a mutex for just this case sped
- * things up, we'd have to consider that.  Another example is getservent(),
- * setservent(), and endservent() could share their own mutex.  Again that
- * isn't currently done; they are all lumped to using the locale mutex.
+ * The macros here are generated from an internal DATA section in
+ * regen/lock_definitions.pl, populated from information derived from the
+ * POSIX 2017 Standard and Linux glibc section 3 man pages.  (Linux tends to
+ * have extra restrictions not in the Standard, and its man pages are
+ * typically more detailed than the Standard, and other vendors, who may also
+ * have the same restrictions, but just don't document them.) The data can
+ * easily be adjusted as necessary.
  */
 
-/* addmntent() has races with other threads concurrently executing any of:
- *             itself, clearerr_unlocked(), __fbufsize(), fflush_unlocked(),
- *             fgetc_unlocked(), fgets_unlocked(), fgetwc_unlocked(),
- *             fgetws_unlocked(), __fpending(), __fpurge(), fputc_unlocked(),
- *             fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
- *             fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
- *             getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
- *             putwc_unlocked().
- */
 #ifndef ADDMNTENT_LOCK
-#  define ADDMNTENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define ADDMNTENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* addmntent() has races with other threads concurrently executing any of:
+    *             itself, clearerr_unlocked(), __fbufsize(),
+    *             fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
+    *             fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
+    *             __fpurge(), fputc_unlocked(), fputs_unlocked(),
+    *             fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
+    *             __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
+    *             getwc_unlocked(), putc_unlocked(), or putwc_unlocked(). */
+#  define ADDMNTENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define ADDMNTENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ALPHASORT_LOCK
@@ -278,15 +261,18 @@
 #  define ALPHASORT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* asctime() has races with other threads concurrently executing either itself
- *           or ctime.
- */
 #ifndef ASCTIME_LOCK
-#  define ASCTIME_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define ASCTIME_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* asctime() Obsolete, use Perl_sv_strftime_tm() instead
+    * asctime() has races with other threads concurrently executing either
+    *           itself or ctime. */
+#  define ASCTIME_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define ASCTIME_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ASCTIME_R_LOCK
+
+   /* asctime_r() Obsolete, use Perl_sv_strftime_tm() instead */
 #  define ASCTIME_R_LOCK    LCr_LOCK_(LC_ALL)
 #  define ASCTIME_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
@@ -317,174 +303,210 @@
 #endif
 
 #ifndef BASENAME_LOCK
-#  define BASENAME_LOCK    gwENVr_LOCK_
-#  define BASENAME_UNLOCK  gwENVr_UNLOCK_
+#  ifndef __GLIBC__
+#    define BASENAME_LOCK    GENw_LOCK_
+#    define BASENAME_UNLOCK  GENw_UNLOCK_
+#  else
+#    define BASENAME_LOCK    NOOP
+#    define BASENAME_UNLOCK  NOOP
+#  endif
 #endif
 
 #ifndef BTOWC_LOCK
-#  ifdef LC_CTYPE
-#    define BTOWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define BTOWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define BTOWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define BTOWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef BTOWC_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define BTOWC_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define BTOWC_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define BTOWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define BTOWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define BTOWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define BTOWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define BTOWC_LOCK    NOOP
+#  define BTOWC_UNLOCK  NOOP
 #endif
 
 #ifndef CATGETS_LOCK
-#  define CATGETS_LOCK    gwENVr_LOCK_
-#  define CATGETS_UNLOCK  gwENVr_UNLOCK_
+#  ifndef __GLIBC__
+#    define CATGETS_LOCK    GENw_LOCK_
+#    define CATGETS_UNLOCK  GENw_UNLOCK_
+#  else
+#    define CATGETS_LOCK    NOOP
+#    define CATGETS_UNLOCK  NOOP
+#  endif
 #endif
 
+#ifndef CATOPEN_LOCK
+#  define CATOPEN_LOCK    ENVr_LOCK_
+#  define CATOPEN_UNLOCK  ENVr_UNLOCK_
+#endif
 
 #ifndef CLEARENV_LOCK
 #  define CLEARENV_LOCK    ENVw_LOCK_
 #  define CLEARENV_UNLOCK  ENVw_UNLOCK_
 #endif
 
-/* clearerr_unlocked() has races with other threads concurrently executing any
- *                     of: itself, addmntent(), __fbufsize(),
- *                     fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
- *                     fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
- *                     __fpurge(), fputc_unlocked(), fputs_unlocked(),
- *                     fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                     __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                     getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef CLEARERR_UNLOCKED_LOCK
-#  define CLEARERR_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define CLEARERR_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* clearerr_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                     locked the stream, but should not be used since not
+    *                     standardized and not widely implemented
+    * clearerr_unlocked() has races with other threads concurrently executing
+    *                     any of: itself, addmntent(), __fbufsize(),
+    *                     fflush_unlocked(), fgetc_unlocked(),
+    *                     fgets_unlocked(), fgetwc_unlocked(),
+    *                     fgetws_unlocked(), __fpending(), __fpurge(),
+    *                     fputc_unlocked(), fputs_unlocked(),
+    *                     fputwc_unlocked(), fputws_unlocked(),
+    *                     fread_unlocked(), __fsetlocking(),
+    *                     fwrite_unlocked(), getc_unlocked(),
+    *                     getwc_unlocked(), putc_unlocked(), or
+    *                     putwc_unlocked(). */
+#  define CLEARERR_UNLOCKED_LOCK    GENw_LOCK_
+#  define CLEARERR_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* crypt() has races with other threads concurrently executing any of: itself,
- *         encrypt(), or setkey().
- */
 #ifndef CRYPT_LOCK
-#  define CRYPT_LOCK    gwENVr_LOCK_
-#  define CRYPT_UNLOCK  gwENVr_UNLOCK_
+
+   /* crypt() has races with other threads concurrently executing any of:
+    *         itself, encrypt(), or setkey(). */
+#  define CRYPT_LOCK    GENw_LOCK_
+#  define CRYPT_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef CRYPT_GENSALT_LOCK
-#  define CRYPT_GENSALT_LOCK    gwENVr_LOCK_
-#  define CRYPT_GENSALT_UNLOCK  gwENVr_UNLOCK_
+#  define CRYPT_GENSALT_LOCK    GENw_LOCK_
+#  define CRYPT_GENSALT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* ctime() has races with other threads concurrently executing any of: itself,
- *         asctime(), gmtime(), or localtime().
- */
+#ifndef CTERMID_LOCK
+#  ifndef __GLIBC__
+
+     /* ctermid() macros only valid if !s */
+#    define CTERMID_LOCK    NOOP
+#    define CTERMID_UNLOCK  NOOP
+#  else
+#    define CTERMID_LOCK    NOOP
+#    define CTERMID_UNLOCK  NOOP
+#  endif
+#endif
+
 #ifndef CTIME_LOCK
-#  define CTIME_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define CTIME_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* ctime() Obsolete, use Perl_sv_strftime_ints() instead
+    * ctime() has races with other threads concurrently executing any of:
+    *         itself, asctime(), gmtime(), or localtime(). */
+#  define CTIME_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define CTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef CTIME_R_LOCK
-#  define CTIME_R_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define CTIME_R_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* ctime_r() Obsolete, use Perl_sv_strftime_ints() instead; has a race
+    *           because some implementations may call tzset */
+#  define CTIME_R_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define CTIME_R_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* cuserid() macros only valid if !string */
 #ifndef CUSERID_LOCK
+
+   /* cuserid() macros only valid if !string */
 #  define CUSERID_LOCK    LCr_LOCK_(LC_ALL)
 #  define CUSERID_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef DBM_CLEARERR_LOCK
-#  define DBM_CLEARERR_LOCK    gwENVr_LOCK_
-#  define DBM_CLEARERR_UNLOCK  gwENVr_UNLOCK_
+#  define DBM_CLEARERR_LOCK    GENw_LOCK_
+#  define DBM_CLEARERR_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef DBM_CLOSE_LOCK
-#  define DBM_CLOSE_LOCK    gwENVr_LOCK_
-#  define DBM_CLOSE_UNLOCK  gwENVr_UNLOCK_
+#  define DBM_CLOSE_LOCK    GENw_LOCK_
+#  define DBM_CLOSE_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef DBM_DELETE_LOCK
-#  define DBM_DELETE_LOCK    gwENVr_LOCK_
-#  define DBM_DELETE_UNLOCK  gwENVr_UNLOCK_
+#  define DBM_DELETE_LOCK    GENw_LOCK_
+#  define DBM_DELETE_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef DBM_ERROR_LOCK
-#  define DBM_ERROR_LOCK    gwENVr_LOCK_
-#  define DBM_ERROR_UNLOCK  gwENVr_UNLOCK_
+#  define DBM_ERROR_LOCK    GENw_LOCK_
+#  define DBM_ERROR_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef DBM_FETCH_LOCK
-#  define DBM_FETCH_LOCK    gwENVr_LOCK_
-#  define DBM_FETCH_UNLOCK  gwENVr_UNLOCK_
+#  define DBM_FETCH_LOCK    GENw_LOCK_
+#  define DBM_FETCH_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef DBM_FIRSTKEY_LOCK
-#  define DBM_FIRSTKEY_LOCK    gwENVr_LOCK_
-#  define DBM_FIRSTKEY_UNLOCK  gwENVr_UNLOCK_
+#  define DBM_FIRSTKEY_LOCK    GENw_LOCK_
+#  define DBM_FIRSTKEY_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef DBM_NEXTKEY_LOCK
-#  define DBM_NEXTKEY_LOCK    gwENVr_LOCK_
-#  define DBM_NEXTKEY_UNLOCK  gwENVr_UNLOCK_
+#  define DBM_NEXTKEY_LOCK    GENw_LOCK_
+#  define DBM_NEXTKEY_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef DBM_OPEN_LOCK
-#  define DBM_OPEN_LOCK    gwENVr_LOCK_
-#  define DBM_OPEN_UNLOCK  gwENVr_UNLOCK_
+#  define DBM_OPEN_LOCK    GENw_LOCK_
+#  define DBM_OPEN_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef DBM_STORE_LOCK
-#  define DBM_STORE_LOCK    gwENVr_LOCK_
-#  define DBM_STORE_UNLOCK  gwENVr_UNLOCK_
+#  define DBM_STORE_LOCK    GENw_LOCK_
+#  define DBM_STORE_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef DIRNAME_LOCK
-#  define DIRNAME_LOCK    LCr_LOCK_(LC_ALL)
-#  define DIRNAME_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#  ifndef __GLIBC__
+#    define DIRNAME_LOCK    LCr_LOCK_(LC_ALL)
+#    define DIRNAME_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#  else
+#    define DIRNAME_LOCK    NOOP
+#    define DIRNAME_UNLOCK  NOOP
+#  endif
 #endif
 
 #ifndef DLERROR_LOCK
-#  define DLERROR_LOCK    gwENVr_LOCK_
-#  define DLERROR_UNLOCK  gwENVr_UNLOCK_
+#  ifndef __GLIBC__
+#    define DLERROR_LOCK    GENw_LOCK_
+#    define DLERROR_UNLOCK  GENw_UNLOCK_
+#  else
+#    define DLERROR_LOCK    NOOP
+#    define DLERROR_UNLOCK  NOOP
+#  endif
 #endif
 
+#ifndef DPRINTF_LOCK
+#  define DPRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define DPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
-/* drand48() has races with other threads concurrently executing any of:
- *           itself, erand48(), jrand48(), lcong48(), lrand48(), mrand48(),
- *           nrand48(), seed48(), or srand48().
- */
 #ifndef DRAND48_LOCK
-#  define DRAND48_LOCK    gwENVr_LOCK_
-#  define DRAND48_UNLOCK  gwENVr_UNLOCK_
+
+   /* drand48() has races with other threads concurrently executing any of:
+    *           itself, erand48(), jrand48(), lcong48(), lrand48(), mrand48(),
+    *           nrand48(), seed48(), or srand48(). */
+#  define DRAND48_LOCK    GENw_LOCK_
+#  define DRAND48_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* drand48_r() has races with other threads concurrently executing any of:
- *             itself, erand48_r(), jrand48_r(), lcong48_r(), lrand48_r(),
- *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r().
- */
 #ifndef DRAND48_R_LOCK
-#  define DRAND48_R_LOCK    gwENVr_LOCK_
-#  define DRAND48_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* drand48_r() has races with other threads concurrently executing any of:
+    *             itself, erand48_r(), jrand48_r(), lcong48_r(), lrand48_r(),
+    *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
+#  define DRAND48_R_LOCK    GENw_LOCK_
+#  define DRAND48_R_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef ECVT_LOCK
-#  define ECVT_LOCK    gwENVr_LOCK_
-#  define ECVT_UNLOCK  gwENVr_UNLOCK_
+
+   /* ecvt() Obsolete, use snprintf() instead */
+#  define ECVT_LOCK    GENw_LOCK_
+#  define ECVT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* encrypt() has races with other threads concurrently executing any of:
- *           itself, crypt(), or setkey().
- */
 #ifndef ENCRYPT_LOCK
-#  define ENCRYPT_LOCK    gwENVr_LOCK_
-#  define ENCRYPT_UNLOCK  gwENVr_UNLOCK_
+
+   /* encrypt() has races with other threads concurrently executing any of:
+    *           itself, crypt(), or setkey(). */
+#  define ENCRYPT_LOCK    GENw_LOCK_
+#  define ENCRYPT_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef ENDALIASENT_LOCK
@@ -492,61 +514,62 @@
 #  define ENDALIASENT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* endfsent() has races with other threads concurrently executing any of:
- *            itself, getfsent(), getfsfile(), getfsspec(), or setfsent().
- */
 #ifndef ENDFSENT_LOCK
-#  define ENDFSENT_LOCK    gwENVr_LOCK_
-#  define ENDFSENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* endfsent() has races with other threads concurrently executing any of:
+    *            itself, getfsent(), getfsfile(), getfsspec(), or setfsent().
+    */
+#  define ENDFSENT_LOCK    GENw_LOCK_
+#  define ENDFSENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* endgrent() has races with other threads concurrently executing any of:
- *            itself, getgrent(), getgrent_r(), or setgrent().
- */
 #ifndef ENDGRENT_LOCK
-#  define ENDGRENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define ENDGRENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* endgrent() has races with other threads concurrently executing any of:
+    *            itself, getgrent(), getgrent_r(), or setgrent(). */
+#  define ENDGRENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define ENDGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* endhostent() has races with other threads concurrently executing any of:
- *              itself, gethostent(), gethostent_r(), or sethostent().
- */
 #ifndef ENDHOSTENT_LOCK
-#  define ENDHOSTENT_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define ENDHOSTENT_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* endhostent() has races with other threads concurrently executing any of:
+    *              itself, gethostent(), gethostent_r(), or sethostent(). */
+#  define ENDHOSTENT_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define ENDHOSTENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* endnetent() has races with other threads concurrently executing any of:
- *             itself, getnetent(), or setnetent().
- */
 #ifndef ENDNETENT_LOCK
-#  define ENDNETENT_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define ENDNETENT_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* endnetent() has races with other threads concurrently executing any of:
+    *             itself, getnetent(), or setnetent(). */
+#  define ENDNETENT_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define ENDNETENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* endnetgrent() has races with other threads concurrently executing any of:
- *               itself, getnetgrent(), getnetgrent_r(), innetgr(), or
- *               setnetgrent().
- */
 #ifndef ENDNETGRENT_LOCK
-#  define ENDNETGRENT_LOCK    gwENVr_LOCK_
-#  define ENDNETGRENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* endnetgrent() has races with other threads concurrently executing any
+    *               of: itself, getnetgrent(), getnetgrent_r(), innetgr(), or
+    *               setnetgrent(). */
+#  define ENDNETGRENT_LOCK    GENw_LOCK_
+#  define ENDNETGRENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* endprotoent() has races with other threads concurrently executing any of:
- *               itself, getprotoent(), or setprotoent().
- */
 #ifndef ENDPROTOENT_LOCK
-#  define ENDPROTOENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define ENDPROTOENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* endprotoent() has races with other threads concurrently executing any
+    *               of: itself, getprotoent(), or setprotoent(). */
+#  define ENDPROTOENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define ENDPROTOENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* endpwent() has races with other threads concurrently executing any of:
- *            itself, getpwent(), getpwent_r(), or setpwent().
- */
 #ifndef ENDPWENT_LOCK
-#  define ENDPWENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define ENDPWENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* endpwent() has races with other threads concurrently executing any of:
+    *            itself, getpwent(), getpwent_r(), or setpwent(). */
+#  define ENDPWENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define ENDPWENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ENDRPCENT_LOCK
@@ -554,71 +577,76 @@
 #  define ENDRPCENT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* endservent() has races with other threads concurrently executing any of:
- *              itself, getservent(), or setservent().
- */
 #ifndef ENDSERVENT_LOCK
-#  define ENDSERVENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define ENDSERVENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* endservent() has races with other threads concurrently executing any of:
+    *              itself, getservent(), or setservent(). */
+#  define ENDSERVENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define ENDSERVENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* endspent() has races with other threads concurrently executing any of:
- *            itself, getspent(), getspent_r(), or setspent().
- */
 #ifndef ENDSPENT_LOCK
-#  define ENDSPENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define ENDSPENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* endspent() has races with other threads concurrently executing any of:
+    *            itself, getspent(), getspent_r(), or setspent(). */
+#  define ENDSPENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define ENDSPENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* endttyent() has races with other threads concurrently executing any of:
- *             itself, getttyent(), getttynam(), or setttyent().
- */
 #ifndef ENDTTYENT_LOCK
-#  define ENDTTYENT_LOCK    gwENVr_LOCK_
-#  define ENDTTYENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* endttyent() has races with other threads concurrently executing any of:
+    *             itself, getttyent(), getttynam(), or setttyent(). */
+#  define ENDTTYENT_LOCK    GENw_LOCK_
+#  define ENDTTYENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* endusershell() is unsuitable for a multi-threaded environment. */
-/*#define ENDUSERSHELL_LOCK  assert(0)*/
+#ifndef ENDUSERSHELL_LOCK
+#  define ENDUSERSHELL_LOCK                              \
+#    error endusershell not suitable for multi-threaded operation
+#endif
 
-/* endutent() has races with other threads concurrently executing any of:
- *            itself, endutxent(), getlogin(), getlogin_r(), getutent(),
- *            getutid(), getutline(), getutxent(), getutxid(), glob(),
- *            login(), logout(), pututline(), pututxline(), setutent(),
- *            setutxent(), utmpname(), or wordexp().
- */
 #ifndef ENDUTENT_LOCK
-#  define ENDUTENT_LOCK    gwENVr_LOCK_
-#  define ENDUTENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* endutent() Obsolete; use endutxent() instead
+    * endutent() has races with other threads concurrently executing any of:
+    *            itself, endutxent(), getlogin(), getlogin_r(), getutent(),
+    *            getutid(), getutline(), getutxent(), getutxid(),
+    *            getutxline(), glob(), login(), logout(), pututline(),
+    *            pututxline(), setutent(), setutxent(), utmpname(), or
+    *            wordexp(). */
+#  define ENDUTENT_LOCK    GENw_LOCK_
+#  define ENDUTENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* endutxent() has races with other threads concurrently executing any of:
- *             itself, endutent(), getlogin(), getlogin_r(), getutent(),
- *             getutid(), getutline(), getutxent(), getutxid(), glob(),
- *             login(), logout(), pututline(), pututxline(), setutent(),
- *             setutxent(), utmpname(), or wordexp().
- */
 #ifndef ENDUTXENT_LOCK
-#  define ENDUTXENT_LOCK    gwENVr_LOCK_
-#  define ENDUTXENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* endutxent() has races with other threads concurrently executing any of:
+    *             itself, endutent(), getlogin(), getlogin_r(), getutent(),
+    *             getutid(), getutline(), getutxent(), getutxid(),
+    *             getutxline(), glob(), login(), logout(), pututline(),
+    *             pututxline(), setutent(), setutxent(), utmpname(), or
+    *             wordexp(). */
+#  define ENDUTXENT_LOCK    GENw_LOCK_
+#  define ENDUTXENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* erand48() has races with other threads concurrently executing any of:
- *           itself, drand48(), jrand48(), lcong48(), lrand48(), mrand48(),
- *           nrand48(), seed48(), or srand48().
- */
 #ifndef ERAND48_LOCK
-#  define ERAND48_LOCK    gwENVr_LOCK_
-#  define ERAND48_UNLOCK  gwENVr_UNLOCK_
+
+   /* erand48() has races with other threads concurrently executing any of:
+    *           itself, drand48(), jrand48(), lcong48(), lrand48(), mrand48(),
+    *           nrand48(), seed48(), or srand48(). */
+#  define ERAND48_LOCK    GENw_LOCK_
+#  define ERAND48_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* erand48_r() has races with other threads concurrently executing any of:
- *             itself, drand48_r(), jrand48_r(), lcong48_r(), lrand48_r(),
- *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r().
- */
 #ifndef ERAND48_R_LOCK
-#  define ERAND48_R_LOCK    gwENVr_LOCK_
-#  define ERAND48_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* erand48_r() has races with other threads concurrently executing any of:
+    *             itself, drand48_r(), jrand48_r(), lcong48_r(), lrand48_r(),
+    *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
+#  define ERAND48_R_LOCK    GENw_LOCK_
+#  define ERAND48_R_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef ERR_LOCK
@@ -631,8 +659,9 @@
 #  define ERROR_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* error_at_line() macros only valid if error_one_per_line */
 #ifndef ERROR_AT_LINE_LOCK
+
+   /* error_at_line() macros only valid if error_one_per_line */
 #  define ERROR_AT_LINE_LOCK    LCr_LOCK_(LC_ALL)
 #  define ERROR_AT_LINE_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
@@ -642,11 +671,15 @@
 #  define ERRX_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* ether_aton() is unsuitable for a multi-threaded environment. */
-/*#define ETHER_ATON_LOCK  assert(0)*/
+#ifndef ETHER_ATON_LOCK
+#  define ETHER_ATON_LOCK                              \
+#    error ether_aton not suitable for multi-threaded operation
+#endif
 
-/* ether_ntoa() is unsuitable for a multi-threaded environment. */
-/*#define ETHER_NTOA_LOCK  assert(0)*/
+#ifndef ETHER_NTOA_LOCK
+#  define ETHER_NTOA_LOCK                              \
+#    error ether_ntoa not suitable for multi-threaded operation
+#endif
 
 #ifndef EXECLP_LOCK
 #  define EXECLP_LOCK    ENVr_LOCK_
@@ -664,161 +697,149 @@
 #endif
 
 #ifndef EXIT_LOCK
-#  define EXIT_LOCK    gwENVr_LOCK_
-#  define EXIT_UNLOCK  gwENVr_UNLOCK_
+#  define EXIT_LOCK    GENw_LOCK_
+#  define EXIT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* __fbufsize() has races with other threads concurrently executing any of:
- *              itself, addmntent(), clearerr_unlocked(), fflush_unlocked(),
- *              fgetc_unlocked(), fgets_unlocked(), fgetwc_unlocked(),
- *              fgetws_unlocked(), __fpending(), __fpurge(), fputc_unlocked(),
- *              fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
- *              fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
- *              getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
- *              putwc_unlocked().
- */
 #ifndef __FBUFSIZE_LOCK
-#  define __FBUFSIZE_LOCK    gwENVr_LOCK_
-#  define __FBUFSIZE_UNLOCK  gwENVr_UNLOCK_
+
+   /* __fbufsize() has races with other threads concurrently executing any of:
+    *              itself, addmntent(), clearerr_unlocked(),
+    *              fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
+    *              fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
+    *              __fpurge(), fputc_unlocked(), fputs_unlocked(),
+    *              fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
+    *              __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
+    *              getwc_unlocked(), putc_unlocked(), or putwc_unlocked(). */
+#  define __FBUFSIZE_LOCK    GENw_LOCK_
+#  define __FBUFSIZE_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FCLOSEALL_LOCK
-#  define FCLOSEALL_LOCK    gwENVr_LOCK_
-#  define FCLOSEALL_UNLOCK  gwENVr_UNLOCK_
+#  define FCLOSEALL_LOCK    GENw_LOCK_
+#  define FCLOSEALL_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FCVT_LOCK
-#  define FCVT_LOCK    gwENVr_LOCK_
-#  define FCVT_UNLOCK  gwENVr_UNLOCK_
+
+   /* fcvt() Obsolete, use snprintf() instead */
+#  define FCVT_LOCK    GENw_LOCK_
+#  define FCVT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* fflush_unlocked() has races with other threads concurrently executing any
- *                   of: itself, addmntent(), clearerr_unlocked(),
- *                   __fbufsize(), fgetc_unlocked(), fgets_unlocked(),
- *                   fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
- *                   __fpurge(), fputc_unlocked(), fputs_unlocked(),
- *                   fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                   __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                   getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FFLUSH_UNLOCKED_LOCK
-#  define FFLUSH_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FFLUSH_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fflush_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                   locked the stream, but should not be used since not
+    *                   standardized and not widely implemented
+    * fflush_unlocked() has races with other threads concurrently executing
+    *                   any of: itself, addmntent(), clearerr_unlocked(),
+    *                   __fbufsize(), fgetc_unlocked(), fgets_unlocked(),
+    *                   fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
+    *                   __fpurge(), fputc_unlocked(), fputs_unlocked(),
+    *                   fputwc_unlocked(), fputws_unlocked(),
+    *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
+    *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
+    *                   putwc_unlocked(). */
+#  define FFLUSH_UNLOCKED_LOCK    GENw_LOCK_
+#  define FFLUSH_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* fgetc_unlocked() has races with other threads concurrently executing any
- *                  of: itself, addmntent(), clearerr_unlocked(),
- *                  __fbufsize(), fflush_unlocked(), fgets_unlocked(),
- *                  fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
- *                  __fpurge(), fputc_unlocked(), fputs_unlocked(),
- *                  fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FGETC_UNLOCKED_LOCK
-#  define FGETC_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FGETC_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fgetc_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                  locked the stream, but should not be used since not
+    *                  standardized and not widely implemented
+    * fgetc_unlocked() has races with other threads concurrently executing any
+    *                  of: itself, addmntent(), clearerr_unlocked(),
+    *                  __fbufsize(), fflush_unlocked(), fgets_unlocked(),
+    *                  fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
+    *                  __fpurge(), fputc_unlocked(), fputs_unlocked(),
+    *                  fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
+    *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
+    *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
+    */
+#  define FGETC_UNLOCKED_LOCK    GENw_LOCK_
+#  define FGETC_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FGETGRENT_LOCK
-#  define FGETGRENT_LOCK    gwENVr_LOCK_
-#  define FGETGRENT_UNLOCK  gwENVr_UNLOCK_
+#  define FGETGRENT_LOCK    GENw_LOCK_
+#  define FGETGRENT_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FGETPWENT_LOCK
-#  define FGETPWENT_LOCK    gwENVr_LOCK_
-#  define FGETPWENT_UNLOCK  gwENVr_UNLOCK_
+#  define FGETPWENT_LOCK    GENw_LOCK_
+#  define FGETPWENT_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FGETSPENT_LOCK
-#  define FGETSPENT_LOCK    gwENVr_LOCK_
-#  define FGETSPENT_UNLOCK  gwENVr_UNLOCK_
+#  define FGETSPENT_LOCK    GENw_LOCK_
+#  define FGETSPENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* fgets_unlocked() has races with other threads concurrently executing any
- *                  of: itself, addmntent(), clearerr_unlocked(),
- *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                  fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
- *                  __fpurge(), fputc_unlocked(), fputs_unlocked(),
- *                  fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FGETS_UNLOCKED_LOCK
-#  define FGETS_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FGETS_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fgets_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                  locked the stream, but should not be used since not
+    *                  standardized and not widely implemented
+    * fgets_unlocked() has races with other threads concurrently executing any
+    *                  of: itself, addmntent(), clearerr_unlocked(),
+    *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                  fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
+    *                  __fpurge(), fputc_unlocked(), fputs_unlocked(),
+    *                  fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
+    *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
+    *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
+    */
+#  define FGETS_UNLOCKED_LOCK    GENw_LOCK_
+#  define FGETS_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FGETWC_LOCK
-#  ifdef LC_CTYPE
-#    define FGETWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define FGETWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define FGETWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define FGETWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef FGETWC_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define FGETWC_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define FGETWC_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define FGETWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define FGETWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define FGETWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define FGETWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define FGETWC_LOCK    NOOP
+#  define FGETWC_UNLOCK  NOOP
 #endif
 
-/* fgetwc_unlocked() has races with other threads concurrently executing any
- *                   of: itself, addmntent(), clearerr_unlocked(),
- *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                   fgets_unlocked(), fgetws_unlocked(), __fpending(),
- *                   __fpurge(), fputc_unlocked(), fputs_unlocked(),
- *                   fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                   __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                   getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FGETWC_UNLOCKED_LOCK
-#  define FGETWC_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FGETWC_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fgetwc_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                   locked the stream, but should not be used since not
+    *                   standardized and not widely implemented
+    * fgetwc_unlocked() has races with other threads concurrently executing
+    *                   any of: itself, addmntent(), clearerr_unlocked(),
+    *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                   fgets_unlocked(), fgetws_unlocked(), __fpending(),
+    *                   __fpurge(), fputc_unlocked(), fputs_unlocked(),
+    *                   fputwc_unlocked(), fputws_unlocked(),
+    *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
+    *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
+    *                   putwc_unlocked(). */
+#  define FGETWC_UNLOCKED_LOCK    GENw_LOCK_
+#  define FGETWC_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FGETWS_LOCK
-#  ifdef LC_CTYPE
-#    define FGETWS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define FGETWS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define FGETWS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define FGETWS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef FGETWS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define FGETWS_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define FGETWS_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define FGETWS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define FGETWS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define FGETWS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define FGETWS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define FGETWS_LOCK    NOOP
+#  define FGETWS_UNLOCK  NOOP
 #endif
 
-/* fgetws_unlocked() has races with other threads concurrently executing any
- *                   of: itself, addmntent(), clearerr_unlocked(),
- *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                   fgets_unlocked(), fgetwc_unlocked(), __fpending(),
- *                   __fpurge(), fputc_unlocked(), fputs_unlocked(),
- *                   fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                   __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                   getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FGETWS_UNLOCKED_LOCK
-#  define FGETWS_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FGETWS_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fgetws_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                   locked the stream, but should not be used since not
+    *                   standardized and not widely implemented
+    * fgetws_unlocked() has races with other threads concurrently executing
+    *                   any of: itself, addmntent(), clearerr_unlocked(),
+    *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                   fgets_unlocked(), fgetwc_unlocked(), __fpending(),
+    *                   __fpurge(), fputc_unlocked(), fputs_unlocked(),
+    *                   fputwc_unlocked(), fputws_unlocked(),
+    *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
+    *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
+    *                   putwc_unlocked(). */
+#  define FGETWS_UNLOCKED_LOCK    GENw_LOCK_
+#  define FGETWS_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FNMATCH_LOCK
@@ -831,173 +852,175 @@
 #  define FORKPTY_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* __fpending() has races with other threads concurrently executing any of:
- *              itself, addmntent(), clearerr_unlocked(), __fbufsize(),
- *              fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
- *              fgetwc_unlocked(), fgetws_unlocked(), __fpurge(),
- *              fputc_unlocked(), fputs_unlocked(), fputwc_unlocked(),
- *              fputws_unlocked(), fread_unlocked(), __fsetlocking(),
- *              fwrite_unlocked(), getc_unlocked(), getwc_unlocked(),
- *              putc_unlocked(), or putwc_unlocked().
- */
 #ifndef __FPENDING_LOCK
-#  define __FPENDING_LOCK    gwENVr_LOCK_
-#  define __FPENDING_UNLOCK  gwENVr_UNLOCK_
+
+   /* __fpending() has races with other threads concurrently executing any of:
+    *              itself, addmntent(), clearerr_unlocked(), __fbufsize(),
+    *              fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
+    *              fgetwc_unlocked(), fgetws_unlocked(), __fpurge(),
+    *              fputc_unlocked(), fputs_unlocked(), fputwc_unlocked(),
+    *              fputws_unlocked(), fread_unlocked(), __fsetlocking(),
+    *              fwrite_unlocked(), getc_unlocked(), getwc_unlocked(),
+    *              putc_unlocked(), or putwc_unlocked(). */
+#  define __FPENDING_LOCK    GENw_LOCK_
+#  define __FPENDING_UNLOCK  GENw_UNLOCK_
 #endif
 
+#ifndef FPRINTF_LOCK
+#  define FPRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define FPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
-/* __fpurge() has races with other threads concurrently executing any of:
- *            itself, addmntent(), clearerr_unlocked(), __fbufsize(),
- *            fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
- *            fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
- *            fputc_unlocked(), fputs_unlocked(), fputwc_unlocked(),
- *            fputws_unlocked(), fread_unlocked(), __fsetlocking(),
- *            fwrite_unlocked(), getc_unlocked(), getwc_unlocked(),
- *            putc_unlocked(), or putwc_unlocked().
- */
 #ifndef __FPURGE_LOCK
-#  define __FPURGE_LOCK    gwENVr_LOCK_
-#  define __FPURGE_UNLOCK  gwENVr_UNLOCK_
+
+   /* __fpurge() Not in POSIX Standard and not portable
+    * __fpurge() has races with other threads concurrently executing any of:
+    *            itself, addmntent(), clearerr_unlocked(), __fbufsize(),
+    *            fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
+    *            fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
+    *            fputc_unlocked(), fputs_unlocked(), fputwc_unlocked(),
+    *            fputws_unlocked(), fread_unlocked(), __fsetlocking(),
+    *            fwrite_unlocked(), getc_unlocked(), getwc_unlocked(),
+    *            putc_unlocked(), or putwc_unlocked(). */
+#  define __FPURGE_LOCK    GENw_LOCK_
+#  define __FPURGE_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* fputc_unlocked() has races with other threads concurrently executing any
- *                  of: itself, addmntent(), clearerr_unlocked(),
- *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
- *                  __fpending(), __fpurge(), fputs_unlocked(),
- *                  fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FPUTC_UNLOCKED_LOCK
-#  define FPUTC_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FPUTC_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fputc_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                  locked the stream, but should not be used since not
+    *                  standardized and not widely implemented
+    * fputc_unlocked() has races with other threads concurrently executing any
+    *                  of: itself, addmntent(), clearerr_unlocked(),
+    *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
+    *                  __fpending(), __fpurge(), fputs_unlocked(),
+    *                  fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
+    *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
+    *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
+    */
+#  define FPUTC_UNLOCKED_LOCK    GENw_LOCK_
+#  define FPUTC_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* fputs_unlocked() has races with other threads concurrently executing any
- *                  of: itself, addmntent(), clearerr_unlocked(),
- *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
- *                  __fpending(), __fpurge(), fputc_unlocked(),
- *                  fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FPUTS_UNLOCKED_LOCK
-#  define FPUTS_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FPUTS_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fputs_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                  locked the stream, but should not be used since not
+    *                  standardized and not widely implemented
+    * fputs_unlocked() has races with other threads concurrently executing any
+    *                  of: itself, addmntent(), clearerr_unlocked(),
+    *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
+    *                  __fpending(), __fpurge(), fputc_unlocked(),
+    *                  fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
+    *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
+    *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
+    */
+#  define FPUTS_UNLOCKED_LOCK    GENw_LOCK_
+#  define FPUTS_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FPUTWC_LOCK
-#  ifdef LC_CTYPE
-#    define FPUTWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define FPUTWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define FPUTWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define FPUTWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef FPUTWC_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define FPUTWC_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define FPUTWC_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define FPUTWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define FPUTWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define FPUTWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define FPUTWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define FPUTWC_LOCK    NOOP
+#  define FPUTWC_UNLOCK  NOOP
 #endif
 
-/* fputwc_unlocked() has races with other threads concurrently executing any
- *                   of: itself, addmntent(), clearerr_unlocked(),
- *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                   fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
- *                   __fpending(), __fpurge(), fputc_unlocked(),
- *                   fputs_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                   __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                   getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FPUTWC_UNLOCKED_LOCK
-#  define FPUTWC_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FPUTWC_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fputwc_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                   locked the stream, but should not be used since not
+    *                   standardized and not widely implemented
+    * fputwc_unlocked() has races with other threads concurrently executing
+    *                   any of: itself, addmntent(), clearerr_unlocked(),
+    *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                   fgets_unlocked(), fgetwc_unlocked(),
+    *                   fgetws_unlocked(), __fpending(), __fpurge(),
+    *                   fputc_unlocked(), fputs_unlocked(), fputws_unlocked(),
+    *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
+    *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
+    *                   putwc_unlocked(). */
+#  define FPUTWC_UNLOCKED_LOCK    GENw_LOCK_
+#  define FPUTWC_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FPUTWS_LOCK
-#  ifdef LC_CTYPE
-#    define FPUTWS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define FPUTWS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define FPUTWS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define FPUTWS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef FPUTWS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define FPUTWS_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define FPUTWS_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define FPUTWS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define FPUTWS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define FPUTWS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define FPUTWS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define FPUTWS_LOCK    NOOP
+#  define FPUTWS_UNLOCK  NOOP
 #endif
 
-/* fputws_unlocked() has races with other threads concurrently executing any
- *                   of: itself, addmntent(), clearerr_unlocked(),
- *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                   fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
- *                   __fpending(), __fpurge(), fputc_unlocked(),
- *                   fputs_unlocked(), fputwc_unlocked(), fread_unlocked(),
- *                   __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                   getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FPUTWS_UNLOCKED_LOCK
-#  define FPUTWS_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FPUTWS_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fputws_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                   locked the stream, but should not be used since not
+    *                   standardized and not widely implemented
+    * fputws_unlocked() has races with other threads concurrently executing
+    *                   any of: itself, addmntent(), clearerr_unlocked(),
+    *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                   fgets_unlocked(), fgetwc_unlocked(),
+    *                   fgetws_unlocked(), __fpending(), __fpurge(),
+    *                   fputc_unlocked(), fputs_unlocked(), fputwc_unlocked(),
+    *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
+    *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
+    *                   putwc_unlocked(). */
+#  define FPUTWS_UNLOCKED_LOCK    GENw_LOCK_
+#  define FPUTWS_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* fread_unlocked() has races with other threads concurrently executing any
- *                  of: itself, addmntent(), clearerr_unlocked(),
- *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
- *                  __fpending(), __fpurge(), fputc_unlocked(),
- *                  fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
- *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FREAD_UNLOCKED_LOCK
-#  define FREAD_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FREAD_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fread_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                  locked the stream, but should not be used since not
+    *                  standardized and not widely implemented
+    * fread_unlocked() has races with other threads concurrently executing any
+    *                  of: itself, addmntent(), clearerr_unlocked(),
+    *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
+    *                  __fpending(), __fpurge(), fputc_unlocked(),
+    *                  fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
+    *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
+    *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
+    */
+#  define FREAD_UNLOCKED_LOCK    GENw_LOCK_
+#  define FREAD_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
+#ifndef FSCANF_LOCK
+#  define FSCANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define FSCANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
-/* __fsetlocking() has races with other threads concurrently executing any of:
- *                 itself, addmntent(), clearerr_unlocked(), __fbufsize(),
- *                 fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
- *                 fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
- *                 __fpurge(), fputc_unlocked(), fputs_unlocked(),
- *                 fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                 fwrite_unlocked(), getc_unlocked(), getwc_unlocked(),
- *                 putc_unlocked(), or putwc_unlocked().
- */
 #ifndef __FSETLOCKING_LOCK
-#  define __FSETLOCKING_LOCK    gwENVr_LOCK_
-#  define __FSETLOCKING_UNLOCK  gwENVr_UNLOCK_
+
+   /* __fsetlocking() has races with other threads concurrently executing any
+    *                 of: itself, addmntent(), clearerr_unlocked(),
+    *                 __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                 fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
+    *                 __fpending(), __fpurge(), fputc_unlocked(),
+    *                 fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
+    *                 fread_unlocked(), fwrite_unlocked(), getc_unlocked(),
+    *                 getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
+    */
+#  define __FSETLOCKING_LOCK    GENw_LOCK_
+#  define __FSETLOCKING_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* fts_children() is unsuitable for a multi-threaded environment. */
-/*#define FTS_CHILDREN_LOCK  assert(0)*/
+#ifndef FTS_CHILDREN_LOCK
+#  define FTS_CHILDREN_LOCK                              \
+#    error fts_children not suitable for multi-threaded operation
+#endif
 
-/* fts_read() is unsuitable for a multi-threaded environment. */
-/*#define FTS_READ_LOCK  assert(0)*/
+#ifndef FTS_READ_LOCK
+#  define FTS_READ_LOCK                              \
+#    error fts_read not suitable for multi-threaded operation
+#endif
 
 #ifndef FTW_LOCK
-#  define FTW_LOCK    gwENVr_LOCK_
-#  define FTW_UNLOCK  gwENVr_UNLOCK_
+
+   /* ftw() Obsolete */
+#  define FTW_LOCK    GENw_LOCK_
+#  define FTW_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef FWPRINTF_LOCK
@@ -1005,43 +1028,51 @@
 #  define FWPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* fwrite_unlocked() has races with other threads concurrently executing any
- *                   of: itself, addmntent(), clearerr_unlocked(),
- *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                   fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
- *                   __fpending(), __fpurge(), fputc_unlocked(),
- *                   fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
- *                   fread_unlocked(), __fsetlocking(), getc_unlocked(),
- *                   getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef FWRITE_UNLOCKED_LOCK
-#  define FWRITE_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define FWRITE_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* fwrite_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                   locked the stream, but should not be used since not
+    *                   standardized and not widely implemented
+    * fwrite_unlocked() has races with other threads concurrently executing
+    *                   any of: itself, addmntent(), clearerr_unlocked(),
+    *                   __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                   fgets_unlocked(), fgetwc_unlocked(),
+    *                   fgetws_unlocked(), __fpending(), __fpurge(),
+    *                   fputc_unlocked(), fputs_unlocked(), fputwc_unlocked(),
+    *                   fputws_unlocked(), fread_unlocked(), __fsetlocking(),
+    *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
+    *                   putwc_unlocked(). */
+#  define FWRITE_UNLOCKED_LOCK    GENw_LOCK_
+#  define FWRITE_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
+#ifndef FWSCANF_LOCK
+#  define FWSCANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define FWSCANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
-/* gamma() has races with other threads concurrently executing any of: itself,
- *         gammaf(), gammal(), lgamma(), lgammaf(), or lgammal().
- */
 #ifndef GAMMA_LOCK
-#  define GAMMA_LOCK    gwENVr_LOCK_
-#  define GAMMA_UNLOCK  gwENVr_UNLOCK_
+
+   /* gamma() has races with other threads concurrently executing any of:
+    *         itself, gammaf(), gammal(), lgamma(), lgammaf(), or lgammal(). */
+#  define GAMMA_LOCK    GENw_LOCK_
+#  define GAMMA_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* gammaf() has races with other threads concurrently executing any of:
- *          itself, gamma(), gammal(), lgamma(), lgammaf(), or lgammal().
- */
 #ifndef GAMMAF_LOCK
-#  define GAMMAF_LOCK    gwENVr_LOCK_
-#  define GAMMAF_UNLOCK  gwENVr_UNLOCK_
+
+   /* gammaf() has races with other threads concurrently executing any of:
+    *          itself, gamma(), gammal(), lgamma(), lgammaf(), or lgammal(). */
+#  define GAMMAF_LOCK    GENw_LOCK_
+#  define GAMMAF_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* gammal() has races with other threads concurrently executing any of:
- *          itself, gamma(), gammaf(), lgamma(), lgammaf(), or lgammal().
- */
 #ifndef GAMMAL_LOCK
-#  define GAMMAL_LOCK    gwENVr_LOCK_
-#  define GAMMAL_UNLOCK  gwENVr_UNLOCK_
+
+   /* gammal() has races with other threads concurrently executing any of:
+    *          itself, gamma(), gammaf(), lgamma(), lgammaf(), or lgammal(). */
+#  define GAMMAL_LOCK    GENw_LOCK_
+#  define GAMMAL_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef GETADDRINFO_LOCK
@@ -1049,50 +1080,59 @@
 #  define GETADDRINFO_UNLOCK  ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getaliasbyname() is unsuitable for a multi-threaded environment. */
-/*#define GETALIASBYNAME_LOCK  assert(0)*/
+#ifndef GETALIASBYNAME_LOCK
+#  define GETALIASBYNAME_LOCK                              \
+#    error getaliasbyname not suitable for multi-threaded operation
+#endif
 
 #ifndef GETALIASBYNAME_R_LOCK
 #  define GETALIASBYNAME_R_LOCK    LCr_LOCK_(LC_ALL)
 #  define GETALIASBYNAME_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getaliasent() is unsuitable for a multi-threaded environment. */
-/*#define GETALIASENT_LOCK  assert(0)*/
+#ifndef GETALIASENT_LOCK
+#  define GETALIASENT_LOCK                              \
+#    error getaliasent not suitable for multi-threaded operation
+#endif
 
 #ifndef GETALIASENT_R_LOCK
 #  define GETALIASENT_R_LOCK    LCr_LOCK_(LC_ALL)
 #  define GETALIASENT_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getchar_unlocked() has races with other threads concurrently executing
- *                    either itself or getwchar_unlocked.
- */
 #ifndef GETCHAR_UNLOCKED_LOCK
-#  define GETCHAR_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define GETCHAR_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* getchar_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                    locked stdin
+    * getchar_unlocked() has races with other threads concurrently executing
+    *                    either itself or getwchar_unlocked. */
+#  define GETCHAR_UNLOCKED_LOCK    GENw_LOCK_
+#  define GETCHAR_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* getcontext() has races with other threads concurrently executing any of:
- *              itself, makecontext(), setcontext(), or swapcontext().
- */
 #ifndef GETCONTEXT_LOCK
-#  define GETCONTEXT_LOCK    gwENVr_LOCK_
-#  define GETCONTEXT_UNLOCK  gwENVr_UNLOCK_
+
+   /* getcontext() has races with other threads concurrently executing any of:
+    *              itself, makecontext(), setcontext(), or swapcontext(). */
+#  define GETCONTEXT_LOCK    GENw_LOCK_
+#  define GETCONTEXT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* getc_unlocked() has races with other threads concurrently executing any of:
- *                 itself, addmntent(), clearerr_unlocked(), __fbufsize(),
- *                 fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
- *                 fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
- *                 __fpurge(), fputc_unlocked(), fputs_unlocked(),
- *                 fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                 __fsetlocking(), fwrite_unlocked(), getwc_unlocked(),
- *                 putc_unlocked(), or putwc_unlocked().
- */
 #ifndef GETC_UNLOCKED_LOCK
-#  define GETC_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define GETC_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* getc_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                 locked the stream
+    * getc_unlocked() has races with other threads concurrently executing any
+    *                 of: itself, addmntent(), clearerr_unlocked(),
+    *                 __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                 fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
+    *                 __fpending(), __fpurge(), fputc_unlocked(),
+    *                 fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
+    *                 fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
+    *                 getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
+    */
+#  define GETC_UNLOCKED_LOCK    GENw_LOCK_
+#  define GETC_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef GET_CURRENT_DIR_NAME_LOCK
@@ -1100,56 +1140,72 @@
 #  define GET_CURRENT_DIR_NAME_UNLOCK  ENVr_UNLOCK_
 #endif
 
+#ifndef GETDATE_LOCK
+#  define GETDATE_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GETDATE_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
+#endif
 
+#ifndef GETDATE_R_LOCK
+#  define GETDATE_R_LOCK    ENVr_LCr_LOCK_(LC_ALL)
+#  define GETDATE_R_UNLOCK  ENVr_LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef GETENV_LOCK
-#  define GETENV_LOCK    ENVr_LOCK_
-#  define GETENV_UNLOCK  ENVr_UNLOCK_
+#  ifdef GETENV_PRESERVES_OTHER_THREAD
+#    define GETENV_LOCK    ENVr_LOCK_
+#    define GETENV_UNLOCK  ENVr_UNLOCK_
+#  else
+#    define GETENV_LOCK    GENw_ENVr_LOCK_
+#    define GETENV_UNLOCK  GENw_ENVr_UNLOCK_
+#  endif
 #endif
 
-/* getfsent() has races with other threads concurrently executing any of:
- *            itself, endfsent(), getfsfile(), getfsspec(), or setfsent().
- */
 #ifndef GETFSENT_LOCK
-#  define GETFSENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETFSENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getfsent() has races with other threads concurrently executing any of:
+    *            itself, endfsent(), getfsfile(), getfsspec(), or setfsent().
+    */
+#  define GETFSENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETFSENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getfsfile() has races with other threads concurrently executing any of:
- *             itself, endfsent(), getfsent(), getfsspec(), or setfsent().
- */
 #ifndef GETFSFILE_LOCK
-#  define GETFSFILE_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETFSFILE_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getfsfile() has races with other threads concurrently executing any of:
+    *             itself, endfsent(), getfsent(), getfsspec(), or setfsent().
+    */
+#  define GETFSFILE_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETFSFILE_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getfsspec() has races with other threads concurrently executing any of:
- *             itself, endfsent(), getfsent(), getfsfile(), or setfsent().
- */
 #ifndef GETFSSPEC_LOCK
-#  define GETFSSPEC_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETFSSPEC_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getfsspec() has races with other threads concurrently executing any of:
+    *             itself, endfsent(), getfsent(), getfsfile(), or setfsent().
+    */
+#  define GETFSSPEC_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETFSSPEC_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getgrent() has races with other threads concurrently executing any of:
- *            itself, endgrent(), getgrent_r(), or setgrent().
- */
 #ifndef GETGRENT_LOCK
-#  define GETGRENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETGRENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getgrent() has races with other threads concurrently executing any of:
+    *            itself, endgrent(), getgrent_r(), or setgrent(). */
+#  define GETGRENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getgrent_r() has races with other threads concurrently executing any of:
- *              itself, endgrent(), getgrent(), or setgrent().
- */
 #ifndef GETGRENT_R_LOCK
-#  define GETGRENT_R_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETGRENT_R_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getgrent_r() has races with other threads concurrently executing any of:
+    *              itself, endgrent(), getgrent(), or setgrent(). */
+#  define GETGRENT_R_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETGRENT_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETGRGID_LOCK
-#  define GETGRGID_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETGRGID_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETGRGID_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETGRGID_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETGRGID_R_LOCK
@@ -1158,8 +1214,8 @@
 #endif
 
 #ifndef GETGRNAM_LOCK
-#  define GETGRNAM_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETGRNAM_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETGRNAM_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETGRNAM_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETGRNAM_R_LOCK
@@ -1173,8 +1229,11 @@
 #endif
 
 #ifndef GETHOSTBYADDR_LOCK
-#  define GETHOSTBYADDR_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define GETHOSTBYADDR_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* gethostbyaddr() Obsolete; use getaddrinfo(); return needs a deep copy
+    *                 for safety instead */
+#  define GETHOSTBYADDR_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GETHOSTBYADDR_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETHOSTBYADDR_R_LOCK
@@ -1183,13 +1242,16 @@
 #endif
 
 #ifndef GETHOSTBYNAME_LOCK
-#  define GETHOSTBYNAME_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define GETHOSTBYNAME_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* gethostbyname() Obsolete; use getnameinfo() instead; return needs a deep
+    *                 copy for safety */
+#  define GETHOSTBYNAME_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GETHOSTBYNAME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETHOSTBYNAME2_LOCK
-#  define GETHOSTBYNAME2_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define GETHOSTBYNAME2_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+#  define GETHOSTBYNAME2_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GETHOSTBYNAME2_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETHOSTBYNAME2_R_LOCK
@@ -1202,54 +1264,57 @@
 #  define GETHOSTBYNAME_R_UNLOCK  ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* gethostent() has races with other threads concurrently executing any of:
- *              itself, endhostent(), gethostent_r(), or sethostent().
- */
 #ifndef GETHOSTENT_LOCK
-#  define GETHOSTENT_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define GETHOSTENT_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* gethostent() has races with other threads concurrently executing any of:
+    *              itself, endhostent(), gethostent_r(), or sethostent(). */
+#  define GETHOSTENT_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GETHOSTENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* gethostent_r() has races with other threads concurrently executing any of:
- *                itself, endhostent(), gethostent(), or sethostent().
- */
 #ifndef GETHOSTENT_R_LOCK
-#  define GETHOSTENT_R_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define GETHOSTENT_R_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* gethostent_r() has races with other threads concurrently executing any
+    *                of: itself, endhostent(), gethostent(), or sethostent().
+    */
+#  define GETHOSTENT_R_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GETHOSTENT_R_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETHOSTID_LOCK
-#  define GETHOSTID_LOCK    ENVr_LCr_LOCK_(LC_ALL)
-#  define GETHOSTID_UNLOCK  ENVr_LCr_UNLOCK_(LC_ALL)
+#  define GETHOSTID_LOCK    GENr_ENVr_LCr_LOCK_(LC_ALL)
+#  define GETHOSTID_UNLOCK  GENr_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getlogin() is vulnerable to signal ALRM
- * getlogin() has races with other threads concurrently executing any of:
- *            itself, endutent(), endutxent(), getlogin_r(), getutent(),
- *            getutid(), getutline(), getutxent(), getutxid(), glob(),
- *            login(), logout(), pututline(), pututxline(), setutent(),
- *            setutxent(), utmpname(), or wordexp().
- */
 #ifndef GETLOGIN_LOCK
-#  define GETLOGIN_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETLOGIN_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getlogin() is vulnerable to signal ALRM
+    * getlogin() has races with other threads concurrently executing any of:
+    *            itself, endutent(), endutxent(), getlogin_r(), getutent(),
+    *            getutid(), getutline(), getutxent(), getutxid(),
+    *            getutxline(), glob(), login(), logout(), pututline(),
+    *            pututxline(), setutent(), setutxent(), utmpname(), or
+    *            wordexp(). */
+#  define GETLOGIN_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETLOGIN_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getlogin_r() is vulnerable to signal ALRM
- * getlogin_r() has races with other threads concurrently executing any of:
- *              itself, endutent(), endutxent(), getlogin(), getutent(),
- *              getutid(), getutline(), getutxent(), getutxid(), glob(),
- *              login(), logout(), pututline(), pututxline(), setutent(),
- *              setutxent(), utmpname(), or wordexp().
- */
 #ifndef GETLOGIN_R_LOCK
-#  define GETLOGIN_R_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETLOGIN_R_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getlogin_r() is vulnerable to signal ALRM
+    * getlogin_r() has races with other threads concurrently executing any of:
+    *              itself, endutent(), endutxent(), getlogin(), getutent(),
+    *              getutid(), getutline(), getutxent(), getutxid(),
+    *              getutxline(), glob(), login(), logout(), pututline(),
+    *              pututxline(), setutent(), setutxent(), utmpname(), or
+    *              wordexp(). */
+#  define GETLOGIN_R_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETLOGIN_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETMNTENT_LOCK
-#  define GETMNTENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETMNTENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETMNTENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETMNTENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETMNTENT_R_LOCK
@@ -1263,8 +1328,8 @@
 #endif
 
 #ifndef GETNETBYADDR_LOCK
-#  define GETNETBYADDR_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETNETBYADDR_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETNETBYADDR_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETNETBYADDR_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETNETBYADDR_R_LOCK
@@ -1273,8 +1338,8 @@
 #endif
 
 #ifndef GETNETBYNAME_LOCK
-#  define GETNETBYNAME_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define GETNETBYNAME_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+#  define GETNETBYNAME_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GETNETBYNAME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETNETBYNAME_R_LOCK
@@ -1282,12 +1347,12 @@
 #  define GETNETBYNAME_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getnetent() has races with other threads concurrently executing any of:
- *             itself, endnetent(), or setnetent().
- */
 #ifndef GETNETENT_LOCK
-#  define GETNETENT_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define GETNETENT_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* getnetent() has races with other threads concurrently executing any of:
+    *             itself, endnetent(), or setnetent(). */
+#  define GETNETENT_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GETNETENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETNETENT_R_LOCK
@@ -1295,56 +1360,58 @@
 #  define GETNETENT_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getnetgrent() has races with other threads concurrently executing any of:
- *               itself, endnetgrent(), getnetgrent_r(), innetgr(), or
- *               setnetgrent().
- */
 #ifndef GETNETGRENT_LOCK
-#  define GETNETGRENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETNETGRENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getnetgrent() has races with other threads concurrently executing any
+    *               of: itself, endnetgrent(), getnetgrent_r(), innetgr(), or
+    *               setnetgrent(). */
+#  define GETNETGRENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETNETGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getnetgrent_r() has races with other threads concurrently executing any of:
- *                 itself, endnetgrent(), getnetgrent(), innetgr(), or
- *                 setnetgrent().
- */
 #ifndef GETNETGRENT_R_LOCK
-#  define GETNETGRENT_R_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETNETGRENT_R_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getnetgrent_r() has races with other threads concurrently executing any
+    *                 of: itself, endnetgrent(), getnetgrent(), innetgr(), or
+    *                 setnetgrent(). */
+#  define GETNETGRENT_R_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETNETGRENT_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getopt() has races with other threads concurrently executing any of:
- *          itself, getopt_long(), or getopt_long_only().
- */
 #ifndef GETOPT_LOCK
-#  define GETOPT_LOCK    gwENVr_LOCK_
-#  define GETOPT_UNLOCK  gwENVr_UNLOCK_
+
+   /* getopt() has races with other threads concurrently executing any of:
+    *          itself, getopt_long(), or getopt_long_only(). */
+#  define GETOPT_LOCK    GENw_ENVr_LOCK_
+#  define GETOPT_UNLOCK  GENw_ENVr_UNLOCK_
 #endif
 
-/* getopt_long() has races with other threads concurrently executing any of:
- *               itself, getopt(), or getopt_long_only().
- */
 #ifndef GETOPT_LONG_LOCK
-#  define GETOPT_LONG_LOCK    gwENVr_LOCK_
-#  define GETOPT_LONG_UNLOCK  gwENVr_UNLOCK_
+
+   /* getopt_long() has races with other threads concurrently executing any
+    *               of: itself, getopt(), or getopt_long_only(). */
+#  define GETOPT_LONG_LOCK    GENw_ENVr_LOCK_
+#  define GETOPT_LONG_UNLOCK  GENw_ENVr_UNLOCK_
 #endif
 
-/* getopt_long_only() has races with other threads concurrently executing any
- *                    of: itself, getopt(), or getopt_long().
- */
 #ifndef GETOPT_LONG_ONLY_LOCK
-#  define GETOPT_LONG_ONLY_LOCK    gwENVr_LOCK_
-#  define GETOPT_LONG_ONLY_UNLOCK  gwENVr_UNLOCK_
+
+   /* getopt_long_only() has races with other threads concurrently executing
+    *                    any of: itself, getopt(), or getopt_long(). */
+#  define GETOPT_LONG_ONLY_LOCK    GENw_ENVr_LOCK_
+#  define GETOPT_LONG_ONLY_UNLOCK  GENw_ENVr_UNLOCK_
 #endif
 
 #ifndef GETPASS_LOCK
-#  define GETPASS_LOCK    ENVw_LOCK_
-#  define GETPASS_UNLOCK  ENVw_UNLOCK_
+
+   /* getpass() Obsolete; DO NOT USE */
+#  define GETPASS_LOCK    GENr_LOCK_
+#  define GETPASS_UNLOCK  GENr_UNLOCK_
 #endif
 
 #ifndef GETPROTOBYNAME_LOCK
-#  define GETPROTOBYNAME_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETPROTOBYNAME_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETPROTOBYNAME_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETPROTOBYNAME_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETPROTOBYNAME_R_LOCK
@@ -1353,8 +1420,8 @@
 #endif
 
 #ifndef GETPROTOBYNUMBER_LOCK
-#  define GETPROTOBYNUMBER_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETPROTOBYNUMBER_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETPROTOBYNUMBER_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETPROTOBYNUMBER_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETPROTOBYNUMBER_R_LOCK
@@ -1362,12 +1429,12 @@
 #  define GETPROTOBYNUMBER_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getprotoent() has races with other threads concurrently executing any of:
- *               itself, endprotoent(), or setprotoent().
- */
 #ifndef GETPROTOENT_LOCK
-#  define GETPROTOENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETPROTOENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getprotoent() has races with other threads concurrently executing any
+    *               of: itself, endprotoent(), or setprotoent(). */
+#  define GETPROTOENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETPROTOENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETPROTOENT_R_LOCK
@@ -1376,29 +1443,31 @@
 #endif
 
 #ifndef GETPW_LOCK
+
+   /* getpw() Obsolete; use getpwuid() instead */
 #  define GETPW_LOCK    LCr_LOCK_(LC_ALL)
 #  define GETPW_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getpwent() has races with other threads concurrently executing any of:
- *            itself, endpwent(), getpwent_r(), or setpwent().
- */
 #ifndef GETPWENT_LOCK
-#  define GETPWENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETPWENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getpwent() has races with other threads concurrently executing any of:
+    *            itself, endpwent(), getpwent_r(), or setpwent(). */
+#  define GETPWENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETPWENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getpwent_r() has races with other threads concurrently executing any of:
- *              itself, endpwent(), getpwent(), or setpwent().
- */
 #ifndef GETPWENT_R_LOCK
-#  define GETPWENT_R_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETPWENT_R_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getpwent_r() has races with other threads concurrently executing any of:
+    *              itself, endpwent(), getpwent(), or setpwent(). */
+#  define GETPWENT_R_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETPWENT_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETPWNAM_LOCK
-#  define GETPWNAM_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETPWNAM_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETPWNAM_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETPWNAM_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETPWNAM_R_LOCK
@@ -1407,8 +1476,8 @@
 #endif
 
 #ifndef GETPWUID_LOCK
-#  define GETPWUID_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETPWUID_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETPWUID_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETPWUID_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETPWUID_R_LOCK
@@ -1416,24 +1485,30 @@
 #  define GETPWUID_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getrpcbyname() is unsuitable for a multi-threaded environment. */
-/*#define GETRPCBYNAME_LOCK  assert(0)*/
+#ifndef GETRPCBYNAME_LOCK
+#  define GETRPCBYNAME_LOCK                              \
+#    error getrpcbyname not suitable for multi-threaded operation
+#endif
 
 #ifndef GETRPCBYNAME_R_LOCK
 #  define GETRPCBYNAME_R_LOCK    LCr_LOCK_(LC_ALL)
 #  define GETRPCBYNAME_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getrpcbynumber() is unsuitable for a multi-threaded environment. */
-/*#define GETRPCBYNUMBER_LOCK  assert(0)*/
+#ifndef GETRPCBYNUMBER_LOCK
+#  define GETRPCBYNUMBER_LOCK                              \
+#    error getrpcbynumber not suitable for multi-threaded operation
+#endif
 
 #ifndef GETRPCBYNUMBER_R_LOCK
 #  define GETRPCBYNUMBER_R_LOCK    LCr_LOCK_(LC_ALL)
 #  define GETRPCBYNUMBER_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getrpcent() is unsuitable for a multi-threaded environment. */
-/*#define GETRPCENT_LOCK  assert(0)*/
+#ifndef GETRPCENT_LOCK
+#  define GETRPCENT_LOCK                              \
+#    error getrpcent not suitable for multi-threaded operation
+#endif
 
 #ifndef GETRPCENT_R_LOCK
 #  define GETRPCENT_R_LOCK    LCr_LOCK_(LC_ALL)
@@ -1446,8 +1521,8 @@
 #endif
 
 #ifndef GETSERVBYNAME_LOCK
-#  define GETSERVBYNAME_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETSERVBYNAME_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETSERVBYNAME_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETSERVBYNAME_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETSERVBYNAME_R_LOCK
@@ -1456,8 +1531,8 @@
 #endif
 
 #ifndef GETSERVBYPORT_LOCK
-#  define GETSERVBYPORT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETSERVBYPORT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETSERVBYPORT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETSERVBYPORT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETSERVBYPORT_R_LOCK
@@ -1465,12 +1540,12 @@
 #  define GETSERVBYPORT_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getservent() has races with other threads concurrently executing any of:
- *              itself, endservent(), or setservent().
- */
 #ifndef GETSERVENT_LOCK
-#  define GETSERVENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETSERVENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getservent() has races with other threads concurrently executing any of:
+    *              itself, endservent(), or setservent(). */
+#  define GETSERVENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETSERVENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETSERVENT_R_LOCK
@@ -1478,25 +1553,25 @@
 #  define GETSERVENT_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getspent() has races with other threads concurrently executing any of:
- *            itself, endspent(), getspent_r(), or setspent().
- */
 #ifndef GETSPENT_LOCK
-#  define GETSPENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETSPENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getspent() has races with other threads concurrently executing any of:
+    *            itself, endspent(), getspent_r(), or setspent(). */
+#  define GETSPENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETSPENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getspent_r() has races with other threads concurrently executing any of:
- *              itself, endspent(), getspent(), or setspent().
- */
 #ifndef GETSPENT_R_LOCK
-#  define GETSPENT_R_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETSPENT_R_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* getspent_r() has races with other threads concurrently executing any of:
+    *              itself, endspent(), getspent(), or setspent(). */
+#  define GETSPENT_R_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETSPENT_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETSPNAM_LOCK
-#  define GETSPNAM_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define GETSPNAM_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define GETSPNAM_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define GETSPNAM_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GETSPNAM_R_LOCK
@@ -1504,179 +1579,181 @@
 #  define GETSPNAM_R_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* getttyent() has races with other threads concurrently executing any of:
- *             itself, endttyent(), getttynam(), or setttyent().
- */
 #ifndef GETTTYENT_LOCK
-#  define GETTTYENT_LOCK    gwENVr_LOCK_
-#  define GETTTYENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* getttyent() has races with other threads concurrently executing any of:
+    *             itself, endttyent(), getttynam(), or setttyent(). */
+#  define GETTTYENT_LOCK    GENw_LOCK_
+#  define GETTTYENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* getttynam() has races with other threads concurrently executing any of:
- *             itself, endttyent(), getttyent(), or setttyent().
- */
 #ifndef GETTTYNAM_LOCK
-#  define GETTTYNAM_LOCK    gwENVr_LOCK_
-#  define GETTTYNAM_UNLOCK  gwENVr_UNLOCK_
+
+   /* getttynam() has races with other threads concurrently executing any of:
+    *             itself, endttyent(), getttyent(), or setttyent(). */
+#  define GETTTYNAM_LOCK    GENw_LOCK_
+#  define GETTTYNAM_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* getusershell() is unsuitable for a multi-threaded environment. */
-/*#define GETUSERSHELL_LOCK  assert(0)*/
+#ifndef GETUSERSHELL_LOCK
+#  define GETUSERSHELL_LOCK                              \
+#    error getusershell not suitable for multi-threaded operation
+#endif
 
-/* getutent() must be called at least once in single-threaded mode to enable
- *            any semblance of thread-safety in subsequent calls.
- * getutent() is vulnerable to signal ALRM
- * getutent() has races with other threads concurrently executing any of:
- *            itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *            getutid(), getutline(), getutxent(), getutxid(), glob(),
- *            login(), logout(), pututline(), pututxline(), setutent(),
- *            setutxent(), utmpname(), or wordexp().
- */
 #ifndef GETUTENT_LOCK
-#  define GETUTENT_LOCK    gwENVr_LOCK_
-#  define GETUTENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* getutent() must be called at least once in single-threaded mode to
+    *            enable thread-safety in subsequent calls when in
+    *            multi-threaded mode.
+    * getutent() Obsolete; use getutxent() instead
+    * getutent() is vulnerable to signal ALRM
+    * getutent() has races with other threads concurrently executing any of:
+    *            itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *            getutid(), getutline(), getutxent(), getutxid(),
+    *            getutxline(), glob(), login(), logout(), pututline(),
+    *            pututxline(), setutent(), setutxent(), utmpname(), or
+    *            wordexp(). */
+#  define GETUTENT_LOCK    GENw_LOCK_
+#  define GETUTENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* getutid() must be called at least once in single-threaded mode to enable
- *           any semblance of thread-safety in subsequent calls.
- * getutid() is vulnerable to signal ALRM
- * getutid() has races with other threads concurrently executing any of:
- *           itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *           getutent(), getutline(), getutxent(), getutxid(), glob(),
- *           login(), logout(), pututline(), pututxline(), setutent(),
- *           setutxent(), utmpname(), or wordexp().
- */
 #ifndef GETUTID_LOCK
-#  define GETUTID_LOCK    gwENVr_LOCK_
-#  define GETUTID_UNLOCK  gwENVr_UNLOCK_
+
+   /* getutid() must be called at least once in single-threaded mode to enable
+    *           thread-safety in subsequent calls when in multi-threaded mode.
+    * getutid() is vulnerable to signal ALRM
+    * getutid() has races with other threads concurrently executing any of:
+    *           itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *           getutent(), getutline(), getutxent(), getutxid(),
+    *           getutxline(), glob(), login(), logout(), pututline(),
+    *           pututxline(), setutent(), setutxent(), utmpname(), or
+    *           wordexp(). */
+#  define GETUTID_LOCK    GENw_LOCK_
+#  define GETUTID_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* getutline() must be called at least once in single-threaded mode to enable
- *             any semblance of thread-safety in subsequent calls.
- * getutline() is vulnerable to signal ALRM
- * getutline() has races with other threads concurrently executing any of:
- *             itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *             getutent(), getutid(), getutxent(), getutxid(), glob(),
- *             login(), logout(), pututline(), pututxline(), setutent(),
- *             setutxent(), utmpname(), or wordexp().
- */
 #ifndef GETUTLINE_LOCK
-#  define GETUTLINE_LOCK    gwENVr_LOCK_
-#  define GETUTLINE_UNLOCK  gwENVr_UNLOCK_
+
+   /* getutline() must be called at least once in single-threaded mode to
+    *             enable thread-safety in subsequent calls when in
+    *             multi-threaded mode.
+    * getutline() Obsolete; use getutxline() instead
+    * getutline() is vulnerable to signal ALRM
+    * getutline() has races with other threads concurrently executing any of:
+    *             itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *             getutent(), getutid(), getutxent(), getutxid(),
+    *             getutxline(), glob(), login(), logout(), pututline(),
+    *             pututxline(), setutent(), setutxent(), utmpname(), or
+    *             wordexp(). */
+#  define GETUTLINE_LOCK    GENw_LOCK_
+#  define GETUTLINE_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* getutxent() must be called at least once in single-threaded mode to enable
- *             any semblance of thread-safety in subsequent calls.
- * getutxent() must be called at least once in single-threaded mode to enable
- *             any semblance of thread-safety in subsequent calls.
- * getutxent() is vulnerable to signal ALRM
- * getutxent() has races with other threads concurrently executing any of:
- *             itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *             getutent(), getutid(), getutline(), getutxid(), glob(),
- *             login(), logout(), pututline(), pututxline(), setutent(),
- *             setutxent(), utmpname(), or wordexp().
- */
 #ifndef GETUTXENT_LOCK
-#  define GETUTXENT_LOCK    gwENVr_LOCK_
-#  define GETUTXENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* getutxent() must be called at least once in single-threaded mode to
+    *             enable thread-safety in subsequent calls when in
+    *             multi-threaded mode.
+    * getutxent() is vulnerable to signal ALRM
+    * getutxent() has races with other threads concurrently executing any of:
+    *             itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *             getutent(), getutid(), getutline(), getutxid(),
+    *             getutxline(), glob(), login(), logout(), pututline(),
+    *             pututxline(), setutent(), setutxent(), utmpname(), or
+    *             wordexp(). */
+#  define GETUTXENT_LOCK    GENw_LOCK_
+#  define GETUTXENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* getutxid() must be called at least once in single-threaded mode to enable
- *            any semblance of thread-safety in subsequent calls.
- * getutxid() must be called at least once in single-threaded mode to enable
- *            any semblance of thread-safety in subsequent calls.
- * getutxid() is vulnerable to signal ALRM
- * getutxid() has races with other threads concurrently executing any of:
- *            itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *            getutent(), getutid(), getutline(), getutxent(), glob(),
- *            login(), logout(), pututline(), pututxline(), setutent(),
- *            setutxent(), utmpname(), or wordexp().
- */
 #ifndef GETUTXID_LOCK
-#  define GETUTXID_LOCK    gwENVr_LOCK_
-#  define GETUTXID_UNLOCK  gwENVr_UNLOCK_
+
+   /* getutxid() must be called at least once in single-threaded mode to
+    *            enable thread-safety in subsequent calls when in
+    *            multi-threaded mode.
+    * getutxid() is vulnerable to signal ALRM
+    * getutxid() has races with other threads concurrently executing any of:
+    *            itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *            getutent(), getutid(), getutline(), getutxent(),
+    *            getutxline(), glob(), login(), logout(), pututline(),
+    *            pututxline(), setutent(), setutxent(), utmpname(), or
+    *            wordexp(). */
+#  define GETUTXID_LOCK    GENw_LOCK_
+#  define GETUTXID_UNLOCK  GENw_UNLOCK_
+#endif
+
+#ifndef GETUTXLINE_LOCK
+
+   /* getutxline() must be called at least once in single-threaded mode to
+    *              enable thread-safety in subsequent calls when in
+    *              multi-threaded mode.
+    * getutxline() is vulnerable to signal ALRM
+    * getutxline() has races with other threads concurrently executing any of:
+    *              itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *              getutent(), getutid(), getutline(), getutxent(),
+    *              getutxid(), glob(), login(), logout(), pututline(),
+    *              pututxline(), setutent(), setutxent(), utmpname(), or
+    *              wordexp(). */
+#  define GETUTXLINE_LOCK    GENw_LOCK_
+#  define GETUTXLINE_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef GETWC_LOCK
-#  ifdef LC_CTYPE
-#    define GETWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define GETWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define GETWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define GETWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef GETWC_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define GETWC_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define GETWC_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define GETWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define GETWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define GETWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define GETWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define GETWC_LOCK    NOOP
+#  define GETWC_UNLOCK  NOOP
 #endif
 
 #ifndef GETWCHAR_LOCK
-#  ifdef LC_CTYPE
-#    define GETWCHAR_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define GETWCHAR_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define GETWCHAR_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define GETWCHAR_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef GETWCHAR_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define GETWCHAR_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define GETWCHAR_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define GETWCHAR_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define GETWCHAR_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define GETWCHAR_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define GETWCHAR_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define GETWCHAR_LOCK    NOOP
+#  define GETWCHAR_UNLOCK  NOOP
 #endif
 
-/* getwchar_unlocked() has races with other threads concurrently executing
- *                     either itself or getchar_unlocked.
- */
 #ifndef GETWCHAR_UNLOCKED_LOCK
-#  define GETWCHAR_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define GETWCHAR_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* getwchar_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                     locked stdin, but should not be used since not
+    *                     standardized and not widely implemented
+    * getwchar_unlocked() has races with other threads concurrently executing
+    *                     either itself or getchar_unlocked. */
+#  define GETWCHAR_UNLOCKED_LOCK    GENw_LOCK_
+#  define GETWCHAR_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* getwc_unlocked() has races with other threads concurrently executing any
- *                  of: itself, addmntent(), clearerr_unlocked(),
- *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
- *                  __fpending(), __fpurge(), fputc_unlocked(),
- *                  fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
- *                  fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
- *                  getc_unlocked(), putc_unlocked(), or putwc_unlocked().
- */
 #ifndef GETWC_UNLOCKED_LOCK
-#  define GETWC_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define GETWC_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* getwc_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                  locked the stream, but should not be used since not
+    *                  standardized and not widely implemented
+    * getwc_unlocked() has races with other threads concurrently executing any
+    *                  of: itself, addmntent(), clearerr_unlocked(),
+    *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
+    *                  __fpending(), __fpurge(), fputc_unlocked(),
+    *                  fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
+    *                  fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
+    *                  getc_unlocked(), putc_unlocked(), or putwc_unlocked().
+    */
+#  define GETWC_UNLOCKED_LOCK    GENw_LOCK_
+#  define GETWC_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* glob() is vulnerable to signal ALRM
- * glob() has races with other threads concurrently executing any of: itself,
- *        endutent(), endutxent(), getlogin(), getlogin_r(), getutent(),
- *        getutid(), getutline(), getutxent(), getutxid(), login(), logout(),
- *        pututline(), pututxline(), setutent(), setutxent(), utmpname(), or
- *        wordexp().
- */
+#ifndef GLOB_LOCK
 
-/* gmtime() has races with other threads concurrently executing any of:
- *          itself, ctime(), or localtime().
- */
+   /* glob() is vulnerable to signal ALRM
+    * glob() has races with other threads concurrently executing any of:
+    *        itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *        getutent(), getutid(), getutline(), getutxent(), getutxid(),
+    *        getutxline(), login(), logout(), pututline(), pututxline(),
+    *        setutent(), setutxent(), utmpname(), or wordexp(). */
+#  define GLOB_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GLOB_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
+#endif
+
 #ifndef GMTIME_LOCK
-#  define GMTIME_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define GMTIME_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* gmtime() has races with other threads concurrently executing any of:
+    *          itself, ctime(), or localtime(). */
+#  define GMTIME_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define GMTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef GMTIME_R_LOCK
@@ -1689,57 +1766,57 @@
 #  define GRANTPT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* hcreate() has races with other threads concurrently executing any of:
- *           itself, hdestroy(), or hsearch().
- */
 #ifndef HCREATE_LOCK
-#  define HCREATE_LOCK    gwENVr_LOCK_
-#  define HCREATE_UNLOCK  gwENVr_UNLOCK_
+
+   /* hcreate() has races with other threads concurrently executing any of:
+    *           itself, hdestroy(), or hsearch(). */
+#  define HCREATE_LOCK    GENw_LOCK_
+#  define HCREATE_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* hcreate_r() has races with other threads concurrently executing any of:
- *             itself, hdestroy_r(), or hsearch_r().
- */
 #ifndef HCREATE_R_LOCK
-#  define HCREATE_R_LOCK    gwENVr_LOCK_
-#  define HCREATE_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* hcreate_r() has races with other threads concurrently executing any of:
+    *             itself, hdestroy_r(), or hsearch_r(). */
+#  define HCREATE_R_LOCK    GENw_LOCK_
+#  define HCREATE_R_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* hdestroy() has races with other threads concurrently executing any of:
- *            itself, hcreate(), or hsearch().
- */
 #ifndef HDESTROY_LOCK
-#  define HDESTROY_LOCK    gwENVr_LOCK_
-#  define HDESTROY_UNLOCK  gwENVr_UNLOCK_
+
+   /* hdestroy() has races with other threads concurrently executing any of:
+    *            itself, hcreate(), or hsearch(). */
+#  define HDESTROY_LOCK    GENw_LOCK_
+#  define HDESTROY_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* hdestroy_r() has races with other threads concurrently executing any of:
- *              itself, hcreate_r(), or hsearch_r().
- */
 #ifndef HDESTROY_R_LOCK
-#  define HDESTROY_R_LOCK    gwENVr_LOCK_
-#  define HDESTROY_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* hdestroy_r() has races with other threads concurrently executing any of:
+    *              itself, hcreate_r(), or hsearch_r(). */
+#  define HDESTROY_R_LOCK    GENw_LOCK_
+#  define HDESTROY_R_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* hsearch() has races with other threads concurrently executing any of:
- *           itself, hcreate(), or hdestroy().
- */
 #ifndef HSEARCH_LOCK
-#  define HSEARCH_LOCK    gwENVr_LOCK_
-#  define HSEARCH_UNLOCK  gwENVr_UNLOCK_
+
+   /* hsearch() has races with other threads concurrently executing any of:
+    *           itself, hcreate(), or hdestroy(). */
+#  define HSEARCH_LOCK    GENw_LOCK_
+#  define HSEARCH_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* hsearch_r() has races with other threads concurrently executing any of:
- *             itself, hcreate_r(), or hdestroy_r().
- */
 #ifndef HSEARCH_R_LOCK
-#  define HSEARCH_R_LOCK    gwENVr_LOCK_
-#  define HSEARCH_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* hsearch_r() has races with other threads concurrently executing any of:
+    *             itself, hcreate_r(), or hdestroy_r(). */
+#  define HSEARCH_R_LOCK    GENw_LOCK_
+#  define HSEARCH_R_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef ICONV_LOCK
-#  define ICONV_LOCK    gwENVr_LOCK_
-#  define ICONV_UNLOCK  gwENVr_UNLOCK_
+#  define ICONV_LOCK    GENw_LOCK_
+#  define ICONV_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef ICONV_OPEN_LOCK
@@ -1763,8 +1840,8 @@
 #endif
 
 #ifndef INET_NTOA_LOCK
-#  define INET_NTOA_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define INET_NTOA_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define INET_NTOA_LOCK    LCr_LOCK_(LC_ALL)
+#  define INET_NTOA_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef INET_NTOP_LOCK
@@ -1782,21 +1859,21 @@
 #  define INITGROUPS_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* initstate_r() has races with other threads concurrently executing any of:
- *               itself, random_r(), setstate_r(), or srandom_r().
- */
 #ifndef INITSTATE_R_LOCK
-#  define INITSTATE_R_LOCK    gwENVr_LOCK_
-#  define INITSTATE_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* initstate_r() has races with other threads concurrently executing any
+    *               of: itself, random_r(), setstate_r(), or srandom_r(). */
+#  define INITSTATE_R_LOCK    GENw_LOCK_
+#  define INITSTATE_R_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* innetgr() has races with other threads concurrently executing any of:
- *           itself, endnetgrent(), getnetgrent(), getnetgrent_r(), or
- *           setnetgrent().
- */
 #ifndef INNETGR_LOCK
-#  define INNETGR_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define INNETGR_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* innetgr() has races with other threads concurrently executing any of:
+    *           itself, endnetgrent(), getnetgrent(), getnetgrent_r(), or
+    *           setnetgrent(). */
+#  define INNETGR_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define INNETGR_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef IRUSEROK_LOCK
@@ -1810,1556 +1887,603 @@
 #endif
 
 #ifndef ISALNUM_LOCK
-#  ifdef LC_CTYPE
-#    define ISALNUM_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISALNUM_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISALNUM_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISALNUM_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISALNUM_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISALNUM_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISALNUM_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISALNUM_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISALNUM_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISALNUM_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISALNUM_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isalnum() Use a Perl isALNUM family macro instead */
+#  define ISALNUM_LOCK    NOOP
+#  define ISALNUM_UNLOCK  NOOP
 #endif
 
 #ifndef ISALNUM_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISALNUM_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISALNUM_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISALNUM_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISALNUM_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISALNUM_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISALNUM_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISALNUM_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISALNUM_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISALNUM_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISALNUM_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISALNUM_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISALNUM_L_LOCK    NOOP
+#  define ISALNUM_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISALPHA_LOCK
-#  ifdef LC_CTYPE
-#    define ISALPHA_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISALPHA_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISALPHA_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISALPHA_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISALPHA_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISALPHA_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISALPHA_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISALPHA_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISALPHA_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISALPHA_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISALPHA_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isalpha() Use a Perl isALPHA family macro instead */
+#  define ISALPHA_LOCK    NOOP
+#  define ISALPHA_UNLOCK  NOOP
 #endif
 
 #ifndef ISALPHA_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISALPHA_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISALPHA_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISALPHA_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISALPHA_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISALPHA_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISALPHA_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISALPHA_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISALPHA_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISALPHA_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISALPHA_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISALPHA_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISALPHA_L_LOCK    NOOP
+#  define ISALPHA_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISASCII_LOCK
-#  ifdef LC_CTYPE
-#    define ISASCII_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISASCII_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISASCII_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISASCII_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISASCII_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISASCII_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISASCII_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISASCII_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISASCII_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISASCII_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISASCII_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isascii() Considered obsolete as being non-portable by POSIX, but Perl
+    *           makes it portable by using an isASCII family macro */
+#  define ISASCII_LOCK    NOOP
+#  define ISASCII_UNLOCK  NOOP
 #endif
 
 #ifndef ISASCII_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISASCII_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISASCII_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISASCII_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISASCII_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISASCII_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISASCII_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISASCII_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISASCII_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISASCII_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISASCII_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISASCII_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISASCII_L_LOCK    NOOP
+#  define ISASCII_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISBLANK_LOCK
-#  ifdef LC_CTYPE
-#    define ISBLANK_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISBLANK_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISBLANK_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISBLANK_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISBLANK_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISBLANK_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISBLANK_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISBLANK_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISBLANK_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISBLANK_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISBLANK_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isblank() Use a Perl isBLANK family macro instead */
+#  define ISBLANK_LOCK    NOOP
+#  define ISBLANK_UNLOCK  NOOP
 #endif
 
 #ifndef ISBLANK_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISBLANK_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISBLANK_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISBLANK_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISBLANK_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISBLANK_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISBLANK_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISBLANK_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISBLANK_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISBLANK_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISBLANK_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISBLANK_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISBLANK_L_LOCK    NOOP
+#  define ISBLANK_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISCNTRL_LOCK
-#  ifdef LC_CTYPE
-#    define ISCNTRL_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISCNTRL_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISCNTRL_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISCNTRL_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISCNTRL_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISCNTRL_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISCNTRL_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISCNTRL_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISCNTRL_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISCNTRL_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISCNTRL_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* iscntrl() Use a Perl isCNTRL family macro instead */
+#  define ISCNTRL_LOCK    NOOP
+#  define ISCNTRL_UNLOCK  NOOP
 #endif
 
 #ifndef ISCNTRL_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISCNTRL_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISCNTRL_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISCNTRL_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISCNTRL_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISCNTRL_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISCNTRL_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISCNTRL_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISCNTRL_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISCNTRL_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISCNTRL_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISCNTRL_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISCNTRL_L_LOCK    NOOP
+#  define ISCNTRL_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISDIGIT_LOCK
-#  ifdef LC_CTYPE
-#    define ISDIGIT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISDIGIT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISDIGIT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISDIGIT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISDIGIT_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISDIGIT_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISDIGIT_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISDIGIT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISDIGIT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISDIGIT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISDIGIT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isdigit() Use a Perl isDIGIT family macro instead */
+#  define ISDIGIT_LOCK    NOOP
+#  define ISDIGIT_UNLOCK  NOOP
 #endif
 
 #ifndef ISDIGIT_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISDIGIT_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISDIGIT_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISDIGIT_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISDIGIT_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISDIGIT_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISDIGIT_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISDIGIT_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISDIGIT_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISDIGIT_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISDIGIT_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISDIGIT_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISDIGIT_L_LOCK    NOOP
+#  define ISDIGIT_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISGRAPH_LOCK
-#  ifdef LC_CTYPE
-#    define ISGRAPH_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISGRAPH_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISGRAPH_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISGRAPH_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISGRAPH_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISGRAPH_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISGRAPH_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISGRAPH_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISGRAPH_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISGRAPH_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISGRAPH_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isgraph() Use a Perl isGRAPH family macro instead */
+#  define ISGRAPH_LOCK    NOOP
+#  define ISGRAPH_UNLOCK  NOOP
 #endif
 
 #ifndef ISGRAPH_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISGRAPH_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISGRAPH_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISGRAPH_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISGRAPH_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISGRAPH_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISGRAPH_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISGRAPH_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISGRAPH_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISGRAPH_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISGRAPH_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISGRAPH_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISGRAPH_L_LOCK    NOOP
+#  define ISGRAPH_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISLOWER_LOCK
-#  ifdef LC_CTYPE
-#    define ISLOWER_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISLOWER_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISLOWER_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISLOWER_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISLOWER_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISLOWER_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISLOWER_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISLOWER_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISLOWER_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISLOWER_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISLOWER_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* islower() Use a Perl isLOWER family macro instead */
+#  define ISLOWER_LOCK    NOOP
+#  define ISLOWER_UNLOCK  NOOP
 #endif
 
 #ifndef ISLOWER_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISLOWER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISLOWER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISLOWER_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISLOWER_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISLOWER_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISLOWER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISLOWER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISLOWER_L_LOCK    NOOP
+#  define ISLOWER_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISPRINT_LOCK
-#  ifdef LC_CTYPE
-#    define ISPRINT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISPRINT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISPRINT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISPRINT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISPRINT_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISPRINT_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISPRINT_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISPRINT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISPRINT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISPRINT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISPRINT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isprint() Use a Perl isPRINT family macro instead */
+#  define ISPRINT_LOCK    NOOP
+#  define ISPRINT_UNLOCK  NOOP
 #endif
 
 #ifndef ISPRINT_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISPRINT_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISPRINT_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISPRINT_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISPRINT_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISPRINT_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISPRINT_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISPRINT_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISPRINT_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISPRINT_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISPRINT_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISPRINT_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISPRINT_L_LOCK    NOOP
+#  define ISPRINT_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISPUNCT_LOCK
-#  ifdef LC_CTYPE
-#    define ISPUNCT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISPUNCT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISPUNCT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISPUNCT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISPUNCT_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISPUNCT_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISPUNCT_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISPUNCT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISPUNCT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISPUNCT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISPUNCT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* ispunct() Use a Perl isPUNCT family macro instead */
+#  define ISPUNCT_LOCK    NOOP
+#  define ISPUNCT_UNLOCK  NOOP
 #endif
 
 #ifndef ISPUNCT_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISPUNCT_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISPUNCT_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISPUNCT_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISPUNCT_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISPUNCT_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISPUNCT_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISPUNCT_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISPUNCT_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISPUNCT_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISPUNCT_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISPUNCT_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISPUNCT_L_LOCK    NOOP
+#  define ISPUNCT_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISSPACE_LOCK
-#  ifdef LC_CTYPE
-#    define ISSPACE_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISSPACE_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISSPACE_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISSPACE_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISSPACE_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISSPACE_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISSPACE_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISSPACE_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISSPACE_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISSPACE_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISSPACE_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isspace() Use a Perl isSPACE family macro instead */
+#  define ISSPACE_LOCK    NOOP
+#  define ISSPACE_UNLOCK  NOOP
 #endif
 
 #ifndef ISSPACE_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISSPACE_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISSPACE_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISSPACE_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISSPACE_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISSPACE_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISSPACE_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISSPACE_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISSPACE_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISSPACE_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISSPACE_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISSPACE_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISSPACE_L_LOCK    NOOP
+#  define ISSPACE_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISUPPER_LOCK
-#  ifdef LC_CTYPE
-#    define ISUPPER_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISUPPER_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISUPPER_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISUPPER_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISUPPER_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISUPPER_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISUPPER_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISUPPER_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISUPPER_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISUPPER_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISUPPER_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isupper() Use a Perl isUPPER family macro instead */
+#  define ISUPPER_LOCK    NOOP
+#  define ISUPPER_UNLOCK  NOOP
 #endif
 
 #ifndef ISUPPER_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISUPPER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISUPPER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISUPPER_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISUPPER_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISUPPER_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISUPPER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISUPPER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISUPPER_L_LOCK    NOOP
+#  define ISUPPER_L_UNLOCK  NOOP
 #endif
 
 #ifndef ISWALNUM_LOCK
-#  ifdef LC_CTYPE
-#    define ISWALNUM_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWALNUM_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWALNUM_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWALNUM_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWALNUM_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWALNUM_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWALNUM_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWALNUM_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWALNUM_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWALNUM_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWALNUM_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswalnum() Use a Perl isALNUM family macro instead */
+#  define ISWALNUM_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWALNUM_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWALNUM_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWALNUM_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWALNUM_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWALNUM_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWALNUM_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWALNUM_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWALNUM_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWALNUM_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWALNUM_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWALNUM_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWALNUM_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWALNUM_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWALNUM_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWALNUM_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWALPHA_LOCK
-#  ifdef LC_CTYPE
-#    define ISWALPHA_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWALPHA_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWALPHA_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWALPHA_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWALPHA_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWALPHA_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWALPHA_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWALPHA_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWALPHA_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWALPHA_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWALPHA_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswalpha() Use a Perl isALPHA family macro instead */
+#  define ISWALPHA_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWALPHA_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWALPHA_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWALPHA_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWALPHA_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWALPHA_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWALPHA_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWALPHA_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWALPHA_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWALPHA_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWALPHA_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWALPHA_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWALPHA_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWALPHA_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-
-#ifndef ISWASCII_LOCK
-#  ifdef LC_CTYPE
-#    define ISWASCII_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWASCII_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWASCII_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWASCII_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWASCII_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWASCII_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWASCII_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWASCII_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWASCII_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWASCII_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWASCII_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-
-#ifndef ISWASCII_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWASCII_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWASCII_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWASCII_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWASCII_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWASCII_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWASCII_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWASCII_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWASCII_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWASCII_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWASCII_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWASCII_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWALPHA_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWALPHA_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWBLANK_LOCK
-#  ifdef LC_CTYPE
-#    define ISWBLANK_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWBLANK_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWBLANK_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWBLANK_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWBLANK_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWBLANK_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWBLANK_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWBLANK_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWBLANK_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWBLANK_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWBLANK_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswblank() Use a Perl isBLANK family macro instead */
+#  define ISWBLANK_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWBLANK_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWBLANK_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWBLANK_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWBLANK_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWBLANK_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWBLANK_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWBLANK_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWBLANK_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWBLANK_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWBLANK_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWBLANK_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWBLANK_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWBLANK_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWBLANK_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWBLANK_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWCNTRL_LOCK
-#  ifdef LC_CTYPE
-#    define ISWCNTRL_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWCNTRL_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWCNTRL_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWCNTRL_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWCNTRL_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWCNTRL_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWCNTRL_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWCNTRL_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWCNTRL_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWCNTRL_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWCNTRL_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswcntrl() Use a Perl isCNTRL family macro instead */
+#  define ISWCNTRL_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWCNTRL_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWCNTRL_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWCNTRL_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWCNTRL_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWCNTRL_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWCNTRL_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWCNTRL_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWCNTRL_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWCNTRL_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWCNTRL_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWCNTRL_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWCNTRL_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWCNTRL_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWCNTRL_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWCNTRL_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWDIGIT_LOCK
-#  ifdef LC_CTYPE
-#    define ISWDIGIT_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWDIGIT_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWDIGIT_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWDIGIT_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWDIGIT_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWDIGIT_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWDIGIT_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWDIGIT_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWDIGIT_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWDIGIT_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWDIGIT_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswdigit() Use a Perl isDIGIT family macro instead */
+#  define ISWDIGIT_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWDIGIT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWDIGIT_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWDIGIT_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWDIGIT_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWDIGIT_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWDIGIT_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWDIGIT_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWDIGIT_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWDIGIT_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWDIGIT_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWGRAPH_LOCK
-#  ifdef LC_CTYPE
-#    define ISWGRAPH_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWGRAPH_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWGRAPH_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWGRAPH_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWGRAPH_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWGRAPH_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWGRAPH_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWGRAPH_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWGRAPH_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWGRAPH_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWGRAPH_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswgraph() Use a Perl isGRAPH family macro instead */
+#  define ISWGRAPH_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWGRAPH_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWGRAPH_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWGRAPH_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWGRAPH_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWGRAPH_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWGRAPH_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWGRAPH_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWGRAPH_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWGRAPH_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWGRAPH_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWGRAPH_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWGRAPH_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWGRAPH_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWGRAPH_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWGRAPH_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWLOWER_LOCK
-#  ifdef LC_CTYPE
-#    define ISWLOWER_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWLOWER_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWLOWER_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWLOWER_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWLOWER_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWLOWER_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWLOWER_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWLOWER_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWLOWER_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWLOWER_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWLOWER_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswlower() Use a Perl isLOWER family macro instead */
+#  define ISWLOWER_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWLOWER_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWLOWER_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWLOWER_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWLOWER_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWLOWER_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWLOWER_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWLOWER_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWLOWER_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWLOWER_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWLOWER_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWLOWER_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWLOWER_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWLOWER_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWLOWER_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWLOWER_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWPRINT_LOCK
-#  ifdef LC_CTYPE
-#    define ISWPRINT_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWPRINT_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWPRINT_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWPRINT_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWPRINT_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWPRINT_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWPRINT_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWPRINT_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWPRINT_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWPRINT_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWPRINT_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswprint() Use a Perl isPRINT family macro instead */
+#  define ISWPRINT_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWPRINT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWPRINT_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWPRINT_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWPRINT_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWPRINT_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWPRINT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWPRINT_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWPRINT_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWPRINT_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWPRINT_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWPRINT_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWPRINT_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWPRINT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWPRINT_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWPRINT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWPUNCT_LOCK
-#  ifdef LC_CTYPE
-#    define ISWPUNCT_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWPUNCT_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWPUNCT_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWPUNCT_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWPUNCT_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWPUNCT_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWPUNCT_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWPUNCT_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWPUNCT_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWPUNCT_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWPUNCT_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswpunct() Use a Perl isPUNCT family macro instead */
+#  define ISWPUNCT_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWPUNCT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWPUNCT_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWPUNCT_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWPUNCT_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWPUNCT_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWPUNCT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWPUNCT_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWPUNCT_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWPUNCT_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWPUNCT_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWPUNCT_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWPUNCT_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWPUNCT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWPUNCT_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWPUNCT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWSPACE_LOCK
-#  ifdef LC_CTYPE
-#    define ISWSPACE_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWSPACE_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWSPACE_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWSPACE_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWSPACE_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWSPACE_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWSPACE_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWSPACE_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWSPACE_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWSPACE_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWSPACE_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswspace() Use a Perl isSPACE family macro instead */
+#  define ISWSPACE_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWSPACE_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWSPACE_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWSPACE_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWSPACE_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWSPACE_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWSPACE_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWSPACE_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWSPACE_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWSPACE_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWSPACE_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWSPACE_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWSPACE_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWSPACE_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWSPACE_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWSPACE_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWUPPER_LOCK
-#  ifdef LC_CTYPE
-#    define ISWUPPER_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWUPPER_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWUPPER_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWUPPER_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWUPPER_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWUPPER_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWUPPER_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWUPPER_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWUPPER_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWUPPER_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWUPPER_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswupper() Use a Perl isUPPER family macro instead */
+#  define ISWUPPER_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWUPPER_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWUPPER_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWUPPER_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWUPPER_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWUPPER_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWUPPER_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWUPPER_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWUPPER_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWUPPER_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWUPPER_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWUPPER_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWUPPER_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWUPPER_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWUPPER_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWUPPER_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWXDIGIT_LOCK
-#  ifdef LC_CTYPE
-#    define ISWXDIGIT_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWXDIGIT_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWXDIGIT_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWXDIGIT_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWXDIGIT_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWXDIGIT_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWXDIGIT_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWXDIGIT_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWXDIGIT_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWXDIGIT_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWXDIGIT_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* iswxdigit() Use a Perl isXDIGIT family macro instead */
+#  define ISWXDIGIT_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWXDIGIT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISWXDIGIT_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISWXDIGIT_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWXDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWXDIGIT_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWXDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef ISWXDIGIT_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISWXDIGIT_L_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define ISWXDIGIT_L_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISWXDIGIT_L_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define ISWXDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define ISWXDIGIT_L_LOCK    LCr_LOCK_(LC_ALL)
-#    define ISWXDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define ISWXDIGIT_L_LOCK    LCr_LOCK_(LC_ALL)
+#  define ISWXDIGIT_L_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef ISXDIGIT_LOCK
-#  ifdef LC_CTYPE
-#    define ISXDIGIT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISXDIGIT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISXDIGIT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISXDIGIT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISXDIGIT_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISXDIGIT_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISXDIGIT_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISXDIGIT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISXDIGIT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISXDIGIT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISXDIGIT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* isxdigit() Use a Perl isXDIGIT family macro instead */
+#  define ISXDIGIT_LOCK    NOOP
+#  define ISXDIGIT_UNLOCK  NOOP
 #endif
 
 #ifndef ISXDIGIT_L_LOCK
-#  ifdef LC_CTYPE
-#    define ISXDIGIT_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISXDIGIT_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISXDIGIT_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISXDIGIT_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef ISXDIGIT_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define ISXDIGIT_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define ISXDIGIT_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define ISXDIGIT_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define ISXDIGIT_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define ISXDIGIT_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define ISXDIGIT_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define ISXDIGIT_L_LOCK    NOOP
+#  define ISXDIGIT_L_UNLOCK  NOOP
 #endif
 
-/* jrand48() has races with other threads concurrently executing any of:
- *           itself, drand48(), erand48(), lcong48(), lrand48(), mrand48(),
- *           nrand48(), seed48(), or srand48().
- */
 #ifndef JRAND48_LOCK
-#  define JRAND48_LOCK    gwENVr_LOCK_
-#  define JRAND48_UNLOCK  gwENVr_UNLOCK_
+
+   /* jrand48() has races with other threads concurrently executing any of:
+    *           itself, drand48(), erand48(), lcong48(), lrand48(), mrand48(),
+    *           nrand48(), seed48(), or srand48(). */
+#  define JRAND48_LOCK    GENw_LOCK_
+#  define JRAND48_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* jrand48_r() has races with other threads concurrently executing any of:
- *             itself, drand48_r(), erand48_r(), lcong48_r(), lrand48_r(),
- *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r().
- */
 #ifndef JRAND48_R_LOCK
-#  define JRAND48_R_LOCK    gwENVr_LOCK_
-#  define JRAND48_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* jrand48_r() has races with other threads concurrently executing any of:
+    *             itself, drand48_r(), erand48_r(), lcong48_r(), lrand48_r(),
+    *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
+#  define JRAND48_R_LOCK    GENw_LOCK_
+#  define JRAND48_R_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef L64A_LOCK
-#  define L64A_LOCK    gwENVr_LOCK_
-#  define L64A_UNLOCK  gwENVr_UNLOCK_
+#  define L64A_LOCK    GENw_LOCK_
+#  define L64A_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* lcong48() has races with other threads concurrently executing any of:
- *           itself, drand48(), erand48(), jrand48(), lrand48(), mrand48(),
- *           nrand48(), seed48(), or srand48().
- */
 #ifndef LCONG48_LOCK
-#  define LCONG48_LOCK    gwENVr_LOCK_
-#  define LCONG48_UNLOCK  gwENVr_UNLOCK_
+
+   /* lcong48() has races with other threads concurrently executing any of:
+    *           itself, drand48(), erand48(), jrand48(), lrand48(), mrand48(),
+    *           nrand48(), seed48(), or srand48(). */
+#  define LCONG48_LOCK    GENw_LOCK_
+#  define LCONG48_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* lcong48_r() has races with other threads concurrently executing any of:
- *             itself, drand48_r(), erand48_r(), jrand48_r(), lrand48_r(),
- *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r().
- */
 #ifndef LCONG48_R_LOCK
-#  define LCONG48_R_LOCK    gwENVr_LOCK_
-#  define LCONG48_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* lcong48_r() has races with other threads concurrently executing any of:
+    *             itself, drand48_r(), erand48_r(), jrand48_r(), lrand48_r(),
+    *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
+#  define LCONG48_R_LOCK    GENw_LOCK_
+#  define LCONG48_R_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* lgamma() has races with other threads concurrently executing any of:
- *          itself, gamma(), gammaf(), gammal(), lgammaf(), or lgammal().
- */
 #ifndef LGAMMA_LOCK
-#  define LGAMMA_LOCK    gwENVr_LOCK_
-#  define LGAMMA_UNLOCK  gwENVr_UNLOCK_
+
+   /* lgamma() has races with other threads concurrently executing any of:
+    *          itself, gamma(), gammaf(), gammal(), lgammaf(), or lgammal(). */
+#  define LGAMMA_LOCK    GENw_LOCK_
+#  define LGAMMA_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* lgammaf() has races with other threads concurrently executing any of:
- *           itself, gamma(), gammaf(), gammal(), lgamma(), or lgammal().
- */
 #ifndef LGAMMAF_LOCK
-#  define LGAMMAF_LOCK    gwENVr_LOCK_
-#  define LGAMMAF_UNLOCK  gwENVr_UNLOCK_
+
+   /* lgammaf() has races with other threads concurrently executing any of:
+    *           itself, gamma(), gammaf(), gammal(), lgamma(), or lgammal(). */
+#  define LGAMMAF_LOCK    GENw_LOCK_
+#  define LGAMMAF_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* lgammal() has races with other threads concurrently executing any of:
- *           itself, gamma(), gammaf(), gammal(), lgamma(), or lgammaf().
- */
 #ifndef LGAMMAL_LOCK
-#  define LGAMMAL_LOCK    gwENVr_LOCK_
-#  define LGAMMAL_UNLOCK  gwENVr_UNLOCK_
+
+   /* lgammal() has races with other threads concurrently executing any of:
+    *           itself, gamma(), gammaf(), gammal(), lgamma(), or lgammaf(). */
+#  define LGAMMAL_LOCK    GENw_LOCK_
+#  define LGAMMAL_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef LOCALECONV_LOCK
-#  define LOCALECONV_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define LOCALECONV_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* localeconv() Use Perl_localeconv() instead */
+#  define LOCALECONV_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define LOCALECONV_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* localtime() has races with other threads concurrently executing any of:
- *             itself, ctime(), or gmtime().
- */
 #ifndef LOCALTIME_LOCK
-#  define LOCALTIME_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define LOCALTIME_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* localtime() has races with other threads concurrently executing any of:
+    *             itself, ctime(), or gmtime(). */
+#  define LOCALTIME_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define LOCALTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef LOCALTIME_R_LOCK
-#  define LOCALTIME_R_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define LOCALTIME_R_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+#  define LOCALTIME_R_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define LOCALTIME_R_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* login() is vulnerable to signal ALRM
- * login() has races with other threads concurrently executing any of: itself,
- *         endutent(), endutxent(), getlogin(), getlogin_r(), getutent(),
- *         getutid(), getutline(), getutxent(), getutxid(), glob(), logout(),
- *         pututline(), pututxline(), setutent(), setutxent(), utmpname(), or
- *         wordexp().
- */
 #ifndef LOGIN_LOCK
-#  define LOGIN_LOCK    gwENVr_LOCK_
-#  define LOGIN_UNLOCK  gwENVr_UNLOCK_
+
+   /* login() Not in POSIX Standard
+    * login() is vulnerable to signal ALRM
+    * login() has races with other threads concurrently executing any of:
+    *         itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *         getutent(), getutid(), getutline(), getutxent(), getutxid(),
+    *         getutxline(), glob(), logout(), pututline(), pututxline(),
+    *         setutent(), setutxent(), utmpname(), or wordexp(). */
+#  define LOGIN_LOCK    GENw_LOCK_
+#  define LOGIN_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* login_tty() has races with other threads concurrently executing either
- *             itself or ttyname.
- */
 #ifndef LOGIN_TTY_LOCK
-#  define LOGIN_TTY_LOCK    gwENVr_LOCK_
-#  define LOGIN_TTY_UNLOCK  gwENVr_UNLOCK_
+
+   /* login_tty() has races with other threads concurrently executing either
+    *             itself or ttyname. */
+#  define LOGIN_TTY_LOCK    GENw_LOCK_
+#  define LOGIN_TTY_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* logout() is vulnerable to signal ALRM
- * logout() has races with other threads concurrently executing any of:
- *          itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *          getutent(), getutid(), getutline(), getutxent(), getutxid(),
- *          glob(), login(), pututline(), pututxline(), setutent(),
- *          setutxent(), utmpname(), or wordexp().
- */
 #ifndef LOGOUT_LOCK
-#  define LOGOUT_LOCK    gwENVr_LOCK_
-#  define LOGOUT_UNLOCK  gwENVr_UNLOCK_
+
+   /* logout() Not in POSIX Standard
+    * logout() is vulnerable to signal ALRM
+    * logout() has races with other threads concurrently executing any of:
+    *          itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *          getutent(), getutid(), getutline(), getutxent(), getutxid(),
+    *          getutxline(), glob(), login(), pututline(), pututxline(),
+    *          setutent(), setutxent(), utmpname(), or wordexp(). */
+#  define LOGOUT_LOCK    GENw_LOCK_
+#  define LOGOUT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* logwtmp() is vulnerable to signal ALRM */
 #ifndef LOGWTMP_LOCK
+
+   /* logwtmp() Not in POSIX Standard
+    * logwtmp() is vulnerable to signal ALRM */
 #  define LOGWTMP_LOCK    NOOP
 #  define LOGWTMP_UNLOCK  NOOP
 #endif
 
-/* lrand48() has races with other threads concurrently executing any of:
- *           itself, drand48(), erand48(), jrand48(), lcong48(), mrand48(),
- *           nrand48(), seed48(), or srand48().
- */
 #ifndef LRAND48_LOCK
-#  define LRAND48_LOCK    gwENVr_LOCK_
-#  define LRAND48_UNLOCK  gwENVr_UNLOCK_
+
+   /* lrand48() has races with other threads concurrently executing any of:
+    *           itself, drand48(), erand48(), jrand48(), lcong48(), mrand48(),
+    *           nrand48(), seed48(), or srand48(). */
+#  define LRAND48_LOCK    GENw_LOCK_
+#  define LRAND48_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* lrand48_r() has races with other threads concurrently executing any of:
- *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
- *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r().
- */
 #ifndef LRAND48_R_LOCK
-#  define LRAND48_R_LOCK    gwENVr_LOCK_
-#  define LRAND48_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* lrand48_r() has races with other threads concurrently executing any of:
+    *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
+    *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
+#  define LRAND48_R_LOCK    GENw_LOCK_
+#  define LRAND48_R_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* makecontext() has races with other threads concurrently executing any of:
- *               itself, getcontext(), setcontext(), or swapcontext().
- */
 #ifndef MAKECONTEXT_LOCK
-#  define MAKECONTEXT_LOCK    gwENVr_LOCK_
-#  define MAKECONTEXT_UNLOCK  gwENVr_UNLOCK_
+
+   /* makecontext() has races with other threads concurrently executing any
+    *               of: itself, getcontext(), setcontext(), or swapcontext().
+    */
+#  define MAKECONTEXT_LOCK    GENw_LOCK_
+#  define MAKECONTEXT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* mallinfo() is unsuitable for a multi-threaded environment.
- * mallinfo() must be called at least once in single-threaded mode to enable
- *            any semblance of thread-safety in subsequent calls.
- */
-/*#define MALLINFO_LOCK  assert(0)*/
+#ifndef MALLINFO_LOCK
+
+   /* mallinfo() must be called at least once in single-threaded mode to
+    *            enable thread-safety in subsequent calls when in
+    *            multi-threaded mode. */
+#  define MALLINFO_LOCK    GENw_LOCK_
+#  define MALLINFO_UNLOCK  GENw_UNLOCK_
+#endif
 
 #ifndef MB_CUR_MAX_LOCK
-#  ifdef LC_CTYPE
-#    define MB_CUR_MAX_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MB_CUR_MAX_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MB_CUR_MAX_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MB_CUR_MAX_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef MB_CUR_MAX_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define MB_CUR_MAX_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define MB_CUR_MAX_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define MB_CUR_MAX_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MB_CUR_MAX_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MB_CUR_MAX_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MB_CUR_MAX_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define MB_CUR_MAX_LOCK    NOOP
+#  define MB_CUR_MAX_UNLOCK  NOOP
 #endif
 
 #ifndef MBLEN_LOCK
-#  ifdef LC_CTYPE
-#    define MBLEN_LOCK    gwENVr_LCr_LOCK_(LC_CTYPE)
-#    define MBLEN_UNLOCK  gwENVr_LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define MBLEN_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#    define MBLEN_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef MBLEN_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define MBLEN_LOCK    gwENVr_LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define MBLEN_UNLOCK  gwENVr_LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define MBLEN_LOCK    gwENVr_LCr_LOCK_(LC_CTYPE)
-#    define MBLEN_UNLOCK  gwENVr_LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define MBLEN_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#    define MBLEN_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define MBLEN_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define MBLEN_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* mbrlen() macros only valid if !ps */
 #ifndef MBRLEN_LOCK
-#  ifdef LC_CTYPE
-#    define MBRLEN_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBRLEN_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBRLEN_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBRLEN_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef MBRLEN_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define MBRLEN_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define MBRLEN_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define MBRLEN_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBRLEN_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBRLEN_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBRLEN_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* mbrlen() macros only valid if !ps */
+#  define MBRLEN_LOCK    NOOP
+#  define MBRLEN_UNLOCK  NOOP
 #endif
 
-/* mbrtowc() macros only valid if !ps */
 #ifndef MBRTOWC_LOCK
-#  ifdef LC_CTYPE
-#    define MBRTOWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBRTOWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBRTOWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBRTOWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef MBRTOWC_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define MBRTOWC_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define MBRTOWC_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define MBRTOWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBRTOWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBRTOWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBRTOWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* mbrtowc() macros only valid if !ps */
+#  define MBRTOWC_LOCK    NOOP
+#  define MBRTOWC_UNLOCK  NOOP
 #endif
 
 #ifndef MBSINIT_LOCK
-#  ifdef LC_CTYPE
-#    define MBSINIT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBSINIT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBSINIT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBSINIT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef MBSINIT_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define MBSINIT_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define MBSINIT_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define MBSINIT_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBSINIT_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBSINIT_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBSINIT_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define MBSINIT_LOCK    NOOP
+#  define MBSINIT_UNLOCK  NOOP
 #endif
 
-/* mbsnrtowcs() macros only valid if !ps */
 #ifndef MBSNRTOWCS_LOCK
-#  ifdef LC_CTYPE
-#    define MBSNRTOWCS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBSNRTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBSNRTOWCS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBSNRTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef MBSNRTOWCS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define MBSNRTOWCS_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define MBSNRTOWCS_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define MBSNRTOWCS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBSNRTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBSNRTOWCS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBSNRTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* mbsnrtowcs() macros only valid if !ps */
+#  define MBSNRTOWCS_LOCK    NOOP
+#  define MBSNRTOWCS_UNLOCK  NOOP
 #endif
 
-/* mbsrtowcs() macros only valid if !ps */
 #ifndef MBSRTOWCS_LOCK
-#  ifdef LC_CTYPE
-#    define MBSRTOWCS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBSRTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBSRTOWCS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBSRTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef MBSRTOWCS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define MBSRTOWCS_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define MBSRTOWCS_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define MBSRTOWCS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBSRTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBSRTOWCS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBSRTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* mbsrtowcs() macros only valid if !ps */
+#  define MBSRTOWCS_LOCK    NOOP
+#  define MBSRTOWCS_UNLOCK  NOOP
 #endif
 
 #ifndef MBSTOWCS_LOCK
-#  ifdef LC_CTYPE
-#    define MBSTOWCS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBSTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBSTOWCS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBSTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef MBSTOWCS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define MBSTOWCS_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define MBSTOWCS_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define MBSTOWCS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define MBSTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define MBSTOWCS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define MBSTOWCS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define MBSTOWCS_LOCK    NOOP
+#  define MBSTOWCS_UNLOCK  NOOP
 #endif
 
 #ifndef MBTOWC_LOCK
-#  ifdef LC_CTYPE
-#    define MBTOWC_LOCK    gwENVr_LCr_LOCK_(LC_CTYPE)
-#    define MBTOWC_UNLOCK  gwENVr_LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define MBTOWC_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#    define MBTOWC_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef MBTOWC_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define MBTOWC_LOCK    gwENVr_LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define MBTOWC_UNLOCK  gwENVr_LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define MBTOWC_LOCK    gwENVr_LCr_LOCK_(LC_CTYPE)
-#    define MBTOWC_UNLOCK  gwENVr_LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define MBTOWC_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#    define MBTOWC_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define MBTOWC_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define MBTOWC_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* mcheck() is unsuitable for a multi-threaded environment.
- * mcheck() has races with other threads concurrently executing any of:
- *          itself, mcheck_check_all(), mcheck_pedantic(), or mprobe().
- */
-/*#define MCHECK_LOCK  assert(0)*/
+#ifndef MCHECK_LOCK
 
-/* mcheck_check_all() is unsuitable for a multi-threaded environment.
- * mcheck_check_all() has races with other threads concurrently executing any
- *                    of: itself, mcheck(), mcheck_pedantic(), or mprobe().
- */
-/*#define MCHECK_CHECK_ALL_LOCK  assert(0)*/
+   /* mcheck() has races with other threads concurrently executing any of:
+    *          itself, mcheck_check_all(), mcheck_pedantic(), or mprobe(). */
+#  define MCHECK_LOCK    GENw_LOCK_
+#  define MCHECK_UNLOCK  GENw_UNLOCK_
+#endif
 
-/* mcheck_pedantic() is unsuitable for a multi-threaded environment.
- * mcheck_pedantic() has races with other threads concurrently executing any
- *                   of: itself, mcheck(), mcheck_check_all(), or mprobe().
- */
-/*#define MCHECK_PEDANTIC_LOCK  assert(0)*/
+#ifndef MCHECK_CHECK_ALL_LOCK
+
+   /* mcheck_check_all() has races with other threads concurrently executing
+    *                    any of: itself, mcheck(), mcheck_pedantic(), or
+    *                    mprobe(). */
+#  define MCHECK_CHECK_ALL_LOCK    GENw_LOCK_
+#  define MCHECK_CHECK_ALL_UNLOCK  GENw_UNLOCK_
+#endif
+
+#ifndef MCHECK_PEDANTIC_LOCK
+
+   /* mcheck_pedantic() has races with other threads concurrently executing
+    *                   any of: itself, mcheck(), mcheck_check_all(), or
+    *                   mprobe(). */
+#  define MCHECK_PEDANTIC_LOCK    GENw_LOCK_
+#  define MCHECK_PEDANTIC_UNLOCK  GENw_UNLOCK_
+#endif
 
 #ifndef MKTIME_LOCK
-#  define MKTIME_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define MKTIME_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+#  define MKTIME_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define MKTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* mprobe() is unsuitable for a multi-threaded environment.
- * mprobe() has races with other threads concurrently executing any of:
- *          itself, mcheck(), mcheck_check_all(), or mcheck_pedantic().
- */
-/*#define MPROBE_LOCK  assert(0)*/
+#ifndef MPROBE_LOCK
 
-/* mrand48() has races with other threads concurrently executing any of:
- *           itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
- *           nrand48(), seed48(), or srand48().
- */
+   /* mprobe() has races with other threads concurrently executing any of:
+    *          itself, mcheck(), mcheck_check_all(), or mcheck_pedantic(). */
+#  define MPROBE_LOCK    GENw_LOCK_
+#  define MPROBE_UNLOCK  GENw_UNLOCK_
+#endif
+
 #ifndef MRAND48_LOCK
-#  define MRAND48_LOCK    gwENVr_LOCK_
-#  define MRAND48_UNLOCK  gwENVr_UNLOCK_
+
+   /* mrand48() has races with other threads concurrently executing any of:
+    *           itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
+    *           nrand48(), seed48(), or srand48(). */
+#  define MRAND48_LOCK    GENw_LOCK_
+#  define MRAND48_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* mrand48_r() has races with other threads concurrently executing any of:
- *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
- *             lrand48_r(), nrand48_r(), seed48_r(), or srand48_r().
- */
 #ifndef MRAND48_R_LOCK
-#  define MRAND48_R_LOCK    gwENVr_LOCK_
-#  define MRAND48_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* mrand48_r() has races with other threads concurrently executing any of:
+    *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
+    *             lrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
+#  define MRAND48_R_LOCK    GENw_LOCK_
+#  define MRAND48_R_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* mtrace() is unsuitable for a multi-threaded environment. */
-/*#define MTRACE_LOCK  assert(0)*/
+#ifndef MTRACE_LOCK
+#  define MTRACE_LOCK                              \
+#    error mtrace not suitable for multi-threaded operation
+#endif
 
-/* muntrace() is unsuitable for a multi-threaded environment. */
-/*#define MUNTRACE_LOCK  assert(0)*/
+#ifndef MUNTRACE_LOCK
+#  define MUNTRACE_LOCK                              \
+#    error muntrace not suitable for multi-threaded operation
+#endif
+
+#ifndef NAN_LOCK
+#  define NAN_LOCK    LCr_LOCK_(LC_ALL)
+#  define NAN_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef NANF_LOCK
+#  define NANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define NANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef NANL_LOCK
+#  define NANL_LOCK    LCr_LOCK_(LC_ALL)
+#  define NANL_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef NEWLOCALE_LOCK
 #  define NEWLOCALE_LOCK    ENVr_LOCK_
@@ -3367,31 +2491,33 @@
 #endif
 
 #ifndef NFTW_LOCK
-#  define NFTW_LOCK    ENVw_LOCK_
-#  define NFTW_UNLOCK  ENVw_UNLOCK_
+
+   /* nftw() chdir() in another thread will mess this up */
+#  define NFTW_LOCK    GENr_LOCK_
+#  define NFTW_UNLOCK  GENr_UNLOCK_
 #endif
 
 #ifndef NL_LANGINFO_LOCK
-#  define NL_LANGINFO_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define NL_LANGINFO_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+#  define NL_LANGINFO_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define NL_LANGINFO_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* nrand48() has races with other threads concurrently executing any of:
- *           itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
- *           mrand48(), seed48(), or srand48().
- */
 #ifndef NRAND48_LOCK
-#  define NRAND48_LOCK    gwENVr_LOCK_
-#  define NRAND48_UNLOCK  gwENVr_UNLOCK_
+
+   /* nrand48() has races with other threads concurrently executing any of:
+    *           itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
+    *           mrand48(), seed48(), or srand48(). */
+#  define NRAND48_LOCK    GENw_LOCK_
+#  define NRAND48_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* nrand48_r() has races with other threads concurrently executing any of:
- *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
- *             lrand48_r(), mrand48_r(), seed48_r(), or srand48_r().
- */
 #ifndef NRAND48_R_LOCK
-#  define NRAND48_R_LOCK    gwENVr_LOCK_
-#  define NRAND48_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* nrand48_r() has races with other threads concurrently executing any of:
+    *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
+    *             lrand48_r(), mrand48_r(), seed48_r(), or srand48_r(). */
+#  define NRAND48_R_LOCK    GENw_LOCK_
+#  define NRAND48_R_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef OPENPTY_LOCK
@@ -3400,19 +2526,27 @@
 #endif
 
 #ifndef PERROR_LOCK
-#  define PERROR_LOCK    gwENVr_LOCK_
-#  define PERROR_UNLOCK  gwENVr_UNLOCK_
+#  define PERROR_LOCK    GENw_LOCK_
+#  define PERROR_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* posix_fallocate() may be unsafe on some platforms */
 #ifndef POSIX_FALLOCATE_LOCK
+
+   /* posix_fallocate() The safety in glibc depends on the file system. 
+    *                   Generally safe */
 #  define POSIX_FALLOCATE_LOCK    NOOP
 #  define POSIX_FALLOCATE_UNLOCK  NOOP
 #endif
 
+#ifndef PRINTF_LOCK
+#  define PRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define PRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
-/* profil() is unsuitable for a multi-threaded environment. */
-/*#define PROFIL_LOCK  assert(0)*/
+#ifndef PROFIL_LOCK
+#  define PROFIL_LOCK                              \
+#    error profil not suitable for multi-threaded operation
+#endif
 
 #ifndef PSIGINFO_LOCK
 #  define PSIGINFO_LOCK    LCr_LOCK_(LC_ALL)
@@ -3425,30 +2559,35 @@
 #endif
 
 #ifndef PTSNAME_LOCK
-#  define PTSNAME_LOCK    gwENVr_LOCK_
-#  define PTSNAME_UNLOCK  gwENVr_UNLOCK_
+#  define PTSNAME_LOCK    GENw_LOCK_
+#  define PTSNAME_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* putchar_unlocked() has races with other threads concurrently executing
- *                    either itself or putwchar_unlocked.
- */
 #ifndef PUTCHAR_UNLOCKED_LOCK
-#  define PUTCHAR_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define PUTCHAR_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* putchar_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                    locked stdin
+    * putchar_unlocked() has races with other threads concurrently executing
+    *                    either itself or putwchar_unlocked. */
+#  define PUTCHAR_UNLOCKED_LOCK    GENw_LOCK_
+#  define PUTCHAR_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* putc_unlocked() has races with other threads concurrently executing any of:
- *                 itself, addmntent(), clearerr_unlocked(), __fbufsize(),
- *                 fflush_unlocked(), fgetc_unlocked(), fgets_unlocked(),
- *                 fgetwc_unlocked(), fgetws_unlocked(), __fpending(),
- *                 __fpurge(), fputc_unlocked(), fputs_unlocked(),
- *                 fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
- *                 __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
- *                 getwc_unlocked(), or putwc_unlocked().
- */
 #ifndef PUTC_UNLOCKED_LOCK
-#  define PUTC_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define PUTC_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* putc_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                 locked the stream
+    * putc_unlocked() has races with other threads concurrently executing any
+    *                 of: itself, addmntent(), clearerr_unlocked(),
+    *                 __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                 fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
+    *                 __fpending(), __fpurge(), fputc_unlocked(),
+    *                 fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
+    *                 fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
+    *                 getc_unlocked(), getwc_unlocked(), or putwc_unlocked().
+    */
+#  define PUTC_UNLOCKED_LOCK    GENw_LOCK_
+#  define PUTC_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef PUTENV_LOCK
@@ -3466,138 +2605,142 @@
 #  define PUTSPENT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* pututline() is vulnerable to signal ALRM
- * pututline() has races with other threads concurrently executing any of:
- *             itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *             getutent(), getutid(), getutline(), getutxent(), getutxid(),
- *             glob(), login(), logout(), pututxline(), setutent(),
- *             setutxent(), utmpname(), or wordexp().
- */
 #ifndef PUTUTLINE_LOCK
-#  define PUTUTLINE_LOCK    gwENVr_LOCK_
-#  define PUTUTLINE_UNLOCK  gwENVr_UNLOCK_
+
+   /* pututline() Obsolete; use pututxline() instead
+    * pututline() is vulnerable to signal ALRM
+    * pututline() has races with other threads concurrently executing any of:
+    *             itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *             getutent(), getutid(), getutline(), getutxent(), getutxid(),
+    *             getutxline(), glob(), login(), logout(), pututxline(),
+    *             setutent(), setutxent(), utmpname(), or wordexp(). */
+#  define PUTUTLINE_LOCK    GENw_LOCK_
+#  define PUTUTLINE_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* pututxline() is vulnerable to signal ALRM
- * pututxline() has races with other threads concurrently executing any of:
- *              itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *              getutent(), getutid(), getutline(), getutxent(), getutxid(),
- *              glob(), login(), logout(), pututline(), setutent(),
- *              setutxent(), utmpname(), or wordexp().
- */
 #ifndef PUTUTXLINE_LOCK
-#  define PUTUTXLINE_LOCK    gwENVr_LOCK_
-#  define PUTUTXLINE_UNLOCK  gwENVr_UNLOCK_
+
+   /* pututxline() is vulnerable to signal ALRM
+    * pututxline() has races with other threads concurrently executing any of:
+    *              itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *              getutent(), getutid(), getutline(), getutxent(),
+    *              getutxid(), getutxline(), glob(), login(), logout(),
+    *              pututline(), setutent(), setutxent(), utmpname(), or
+    *              wordexp(). */
+#  define PUTUTXLINE_LOCK    GENw_LOCK_
+#  define PUTUTXLINE_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef PUTWC_LOCK
-#  ifdef LC_CTYPE
-#    define PUTWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define PUTWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define PUTWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define PUTWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef PUTWC_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define PUTWC_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define PUTWC_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define PUTWC_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define PUTWC_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define PUTWC_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define PUTWC_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define PUTWC_LOCK    NOOP
+#  define PUTWC_UNLOCK  NOOP
 #endif
 
 #ifndef PUTWCHAR_LOCK
-#  ifdef LC_CTYPE
-#    define PUTWCHAR_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define PUTWCHAR_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define PUTWCHAR_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define PUTWCHAR_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef PUTWCHAR_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define PUTWCHAR_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define PUTWCHAR_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define PUTWCHAR_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define PUTWCHAR_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define PUTWCHAR_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define PUTWCHAR_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define PUTWCHAR_LOCK    NOOP
+#  define PUTWCHAR_UNLOCK  NOOP
 #endif
 
-/* putwchar_unlocked() has races with other threads concurrently executing
- *                     either itself or putchar_unlocked.
- */
 #ifndef PUTWCHAR_UNLOCKED_LOCK
-#  define PUTWCHAR_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define PUTWCHAR_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* putwchar_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                     locked stdout, but should not be used since not
+    *                     standardized and not widely implemented
+    * putwchar_unlocked() has races with other threads concurrently executing
+    *                     either itself or putchar_unlocked. */
+#  define PUTWCHAR_UNLOCKED_LOCK    GENw_LOCK_
+#  define PUTWCHAR_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* putwc_unlocked() has races with other threads concurrently executing any
- *                  of: itself, addmntent(), clearerr_unlocked(),
- *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
- *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
- *                  __fpending(), __fpurge(), fputc_unlocked(),
- *                  fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
- *                  fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
- *                  getc_unlocked(), getwc_unlocked(), or putc_unlocked().
- */
 #ifndef PUTWC_UNLOCKED_LOCK
-#  define PUTWC_UNLOCKED_LOCK    gwENVr_LOCK_
-#  define PUTWC_UNLOCKED_UNLOCK  gwENVr_UNLOCK_
+
+   /* putwc_unlocked() Is thread-safe if flockfile() or ftrylockfile() have
+    *                  locked the stream, but should not be used since not
+    *                  standardized and not widely implemented
+    * putwc_unlocked() has races with other threads concurrently executing any
+    *                  of: itself, addmntent(), clearerr_unlocked(),
+    *                  __fbufsize(), fflush_unlocked(), fgetc_unlocked(),
+    *                  fgets_unlocked(), fgetwc_unlocked(), fgetws_unlocked(),
+    *                  __fpending(), __fpurge(), fputc_unlocked(),
+    *                  fputs_unlocked(), fputwc_unlocked(), fputws_unlocked(),
+    *                  fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
+    *                  getc_unlocked(), getwc_unlocked(), or putc_unlocked().
+    */
+#  define PUTWC_UNLOCKED_LOCK    GENw_LOCK_
+#  define PUTWC_UNLOCKED_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* pvalloc() must be called at least once in single-threaded mode to enable
- *           any semblance of thread-safety in subsequent calls.
- */
 #ifndef PVALLOC_LOCK
+
+   /* pvalloc() must be called at least once in single-threaded mode to enable
+    *           thread-safety in subsequent calls when in multi-threaded mode.
+    */
 #  define PVALLOC_LOCK    NOOP
 #  define PVALLOC_UNLOCK  NOOP
 #endif
 
 #ifndef QECVT_LOCK
-#  define QECVT_LOCK    gwENVr_LOCK_
-#  define QECVT_UNLOCK  gwENVr_UNLOCK_
+
+   /* qecvt() Obsolete; use snprintf() instead */
+#  define QECVT_LOCK    GENw_LOCK_
+#  define QECVT_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef QFCVT_LOCK
-#  define QFCVT_LOCK    gwENVr_LOCK_
-#  define QFCVT_UNLOCK  gwENVr_UNLOCK_
+
+   /* qfcvt() Obsolete; use snprintf() instead */
+#  define QFCVT_LOCK    GENw_LOCK_
+#  define QFCVT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* random_r() has races with other threads concurrently executing any of:
- *            itself, initstate_r(), setstate_r(), or srandom_r().
- */
+#ifndef RAND_LOCK
+#  ifndef __GLIBC__
+
+     /* rand() Problematic and should be avoided; See POSIX Standard */
+#    define RAND_LOCK    NOOP
+#    define RAND_UNLOCK  NOOP
+#  else
+#    define RAND_LOCK    NOOP
+#    define RAND_UNLOCK  NOOP
+#  endif
+#endif
+
 #ifndef RANDOM_R_LOCK
-#  define RANDOM_R_LOCK    gwENVr_LOCK_
-#  define RANDOM_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* random_r() has races with other threads concurrently executing any of:
+    *            itself, initstate_r(), setstate_r(), or srandom_r(). */
+#  define RANDOM_R_LOCK    GENw_LOCK_
+#  define RANDOM_R_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* rcmd() is unsuitable for a multi-threaded environment. */
-/*#define RCMD_LOCK  assert(0)*/
+#ifndef RCMD_LOCK
+#  define RCMD_LOCK                              \
+#    error rcmd not suitable for multi-threaded operation
+#endif
 
-/* rcmd_af() is unsuitable for a multi-threaded environment. */
-/*#define RCMD_AF_LOCK  assert(0)*/
+#ifndef RCMD_AF_LOCK
+#  define RCMD_AF_LOCK                              \
+#    error rcmd_af not suitable for multi-threaded operation
+#endif
 
 #ifndef READDIR_LOCK
-#  define READDIR_LOCK    gwENVr_LOCK_
-#  define READDIR_UNLOCK  gwENVr_UNLOCK_
+#  define READDIR_LOCK    GENw_LOCK_
+#  define READDIR_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* re_comp() is unsuitable for a multi-threaded environment. */
-/*#define RE_COMP_LOCK  assert(0)*/
+#ifndef RE_COMP_LOCK
 
-/* re_exec() is unsuitable for a multi-threaded environment. */
-/*#define RE_EXEC_LOCK  assert(0)*/
+   /* re_comp() Obsolete; use regcomp() instead */
+#  define RE_COMP_LOCK                              \
+#    error re_comp not suitable for multi-threaded operation
+#endif
+
+#ifndef RE_EXEC_LOCK
+
+   /* re_exec() Obsolete; use regexec() instead */
+#  define RE_EXEC_LOCK                              \
+#    error re_exec not suitable for multi-threaded operation
+#endif
 
 #ifndef REGCOMP_LOCK
 #  define REGCOMP_LOCK    LCr_LOCK_(LC_ALL)
@@ -3644,12 +2787,24 @@
 #  define RES_NSEND_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* rexec() is unsuitable for a multi-threaded environment. */
-/*#define REXEC_LOCK  assert(0)*/
+#ifndef REXEC_LOCK
 
-/* rexec_af() is unsuitable for a multi-threaded environment. */
-/*#define REXEC_AF_LOCK  assert(0)*/
+   /* rexec() Obsolete; use rcmd() instead */
+#  define REXEC_LOCK                              \
+#    error rexec not suitable for multi-threaded operation
+#endif
 
+#ifndef REXEC_AF_LOCK
+
+   /* rexec_af() Obsolete; use rcmd() instead */
+#  define REXEC_AF_LOCK                              \
+#    error rexec_af not suitable for multi-threaded operation
+#endif
+
+#ifndef RPMATCH_LOCK
+#  define RPMATCH_LOCK    LCr_LOCK_(LC_ALL)
+#  define RPMATCH_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef RUSEROK_LOCK
 #  define RUSEROK_LOCK    LCr_LOCK_(LC_ALL)
@@ -3662,32 +2817,41 @@
 #endif
 
 #ifndef SCANDIR_LOCK
-#  define SCANDIR_LOCK    TSE_TOGGLE_(LC_ALL)
-#  define SCANDIR_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
+#  define SCANDIR_LOCK    NOOP
+#  define SCANDIR_UNLOCK  NOOP
 #endif
 
+#ifndef SCANF_LOCK
+#  define SCANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define SCANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef SECURE_GETENV_LOCK
-#  define SECURE_GETENV_LOCK    ENVr_LOCK_
-#  define SECURE_GETENV_UNLOCK  ENVr_UNLOCK_
+#  ifdef GETENV_PRESERVES_OTHER_THREAD
+#    define SECURE_GETENV_LOCK    ENVr_LOCK_
+#    define SECURE_GETENV_UNLOCK  ENVr_UNLOCK_
+#  else
+#    define SECURE_GETENV_LOCK    GENw_ENVr_LOCK_
+#    define SECURE_GETENV_UNLOCK  GENw_ENVr_UNLOCK_
+#  endif
 #endif
 
-/* seed48() has races with other threads concurrently executing any of:
- *          itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
- *          mrand48(), nrand48(), or srand48().
- */
 #ifndef SEED48_LOCK
-#  define SEED48_LOCK    gwENVr_LOCK_
-#  define SEED48_UNLOCK  gwENVr_UNLOCK_
+
+   /* seed48() has races with other threads concurrently executing any of:
+    *          itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
+    *          mrand48(), nrand48(), or srand48(). */
+#  define SEED48_LOCK    GENw_LOCK_
+#  define SEED48_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* seed48_r() has races with other threads concurrently executing any of:
- *            itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
- *            lrand48_r(), mrand48_r(), nrand48_r(), or srand48_r().
- */
 #ifndef SEED48_R_LOCK
-#  define SEED48_R_LOCK    gwENVr_LOCK_
-#  define SEED48_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* seed48_r() has races with other threads concurrently executing any of:
+    *            itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
+    *            lrand48_r(), mrand48_r(), nrand48_r(), or srand48_r(). */
+#  define SEED48_R_LOCK    GENw_LOCK_
+#  define SEED48_R_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef SETALIASENT_LOCK
@@ -3695,12 +2859,12 @@
 #  define SETALIASENT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* setcontext() has races with other threads concurrently executing any of:
- *              itself, getcontext(), makecontext(), or swapcontext().
- */
 #ifndef SETCONTEXT_LOCK
-#  define SETCONTEXT_LOCK    gwENVr_LOCK_
-#  define SETCONTEXT_UNLOCK  gwENVr_UNLOCK_
+
+   /* setcontext() has races with other threads concurrently executing any of:
+    *              itself, getcontext(), makecontext(), or swapcontext(). */
+#  define SETCONTEXT_LOCK    GENw_LOCK_
+#  define SETCONTEXT_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef SETENV_LOCK
@@ -3708,82 +2872,90 @@
 #  define SETENV_UNLOCK  ENVw_UNLOCK_
 #endif
 
-/* setfsent() has races with other threads concurrently executing any of:
- *            itself, endfsent(), getfsent(), getfsfile(), or getfsspec().
- */
 #ifndef SETFSENT_LOCK
-#  define SETFSENT_LOCK    gwENVr_LOCK_
-#  define SETFSENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* setfsent() has races with other threads concurrently executing any of:
+    *            itself, endfsent(), getfsent(), getfsfile(), or getfsspec().
+    */
+#  define SETFSENT_LOCK    GENw_LOCK_
+#  define SETFSENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* setgrent() has races with other threads concurrently executing any of:
- *            itself, endgrent(), getgrent(), or getgrent_r().
- */
 #ifndef SETGRENT_LOCK
-#  define SETGRENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define SETGRENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* setgrent() has races with other threads concurrently executing any of:
+    *            itself, endgrent(), getgrent(), or getgrent_r(). */
+#  define SETGRENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define SETGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* sethostent() has races with other threads concurrently executing any of:
- *              itself, endhostent(), gethostent(), or gethostent_r().
- */
 #ifndef SETHOSTENT_LOCK
-#  define SETHOSTENT_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define SETHOSTENT_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* sethostent() has races with other threads concurrently executing any of:
+    *              itself, endhostent(), gethostent(), or gethostent_r(). */
+#  define SETHOSTENT_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define SETHOSTENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* sethostid() is unsuitable for a multi-threaded environment. */
-/*#define SETHOSTID_LOCK  assert(0)*/
+#ifndef SETHOSTID_LOCK
+#  define SETHOSTID_LOCK    GENw_LOCK_
+#  define SETHOSTID_UNLOCK  GENw_UNLOCK_
+#endif
 
-/* setkey() has races with other threads concurrently executing any of:
- *          itself, crypt(), or encrypt().
- */
 #ifndef SETKEY_LOCK
-#  define SETKEY_LOCK    gwENVr_LOCK_
-#  define SETKEY_UNLOCK  gwENVr_UNLOCK_
+
+   /* setkey() has races with other threads concurrently executing any of:
+    *          itself, crypt(), or encrypt(). */
+#  define SETKEY_LOCK    GENw_LOCK_
+#  define SETKEY_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef SETLOCALE_LOCK
-#  define SETLOCALE_LOCK    ENVr_LCw_LOCK_(LC_ALL)
-#  define SETLOCALE_UNLOCK  ENVr_LCw_UNLOCK_(LC_ALL)
+#  ifndef WIN32
+#    define SETLOCALE_LOCK    ENVr_LCw_LOCK_(LC_ALL)
+#    define SETLOCALE_UNLOCK  ENVr_LCw_UNLOCK_(LC_ALL)
+#  else
+#    define SETLOCALE_LOCK    NOOP
+#    define SETLOCALE_UNLOCK  NOOP
+#  endif
 #endif
 
 #ifndef SETLOGMASK_LOCK
-#  define SETLOGMASK_LOCK    gwENVr_LOCK_
-#  define SETLOGMASK_UNLOCK  gwENVr_UNLOCK_
+#  define SETLOGMASK_LOCK    GENw_LOCK_
+#  define SETLOGMASK_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* setnetent() has races with other threads concurrently executing any of:
- *             itself, endnetent(), or getnetent().
- */
 #ifndef SETNETENT_LOCK
-#  define SETNETENT_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define SETNETENT_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+
+   /* setnetent() has races with other threads concurrently executing any of:
+    *             itself, endnetent(), or getnetent(). */
+#  define SETNETENT_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define SETNETENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* setnetgrent() has races with other threads concurrently executing any of:
- *               itself, endnetgrent(), getnetgrent(), getnetgrent_r(), or
- *               innetgr().
- */
 #ifndef SETNETGRENT_LOCK
-#  define SETNETGRENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define SETNETGRENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* setnetgrent() has races with other threads concurrently executing any
+    *               of: itself, endnetgrent(), getnetgrent(), getnetgrent_r(),
+    *               or innetgr(). */
+#  define SETNETGRENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define SETNETGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* setprotoent() has races with other threads concurrently executing any of:
- *               itself, endprotoent(), or getprotoent().
- */
 #ifndef SETPROTOENT_LOCK
-#  define SETPROTOENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define SETPROTOENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* setprotoent() has races with other threads concurrently executing any
+    *               of: itself, endprotoent(), or getprotoent(). */
+#  define SETPROTOENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define SETPROTOENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* setpwent() has races with other threads concurrently executing any of:
- *            itself, endpwent(), getpwent(), or getpwent_r().
- */
 #ifndef SETPWENT_LOCK
-#  define SETPWENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define SETPWENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* setpwent() has races with other threads concurrently executing any of:
+    *            itself, endpwent(), getpwent(), or getpwent_r(). */
+#  define SETPWENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define SETPWENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef SETRPCENT_LOCK
@@ -3791,66 +2963,69 @@
 #  define SETRPCENT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* setservent() has races with other threads concurrently executing any of:
- *              itself, endservent(), or getservent().
- */
 #ifndef SETSERVENT_LOCK
-#  define SETSERVENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define SETSERVENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* setservent() has races with other threads concurrently executing any of:
+    *              itself, endservent(), or getservent(). */
+#  define SETSERVENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define SETSERVENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* setspent() has races with other threads concurrently executing any of:
- *            itself, endspent(), getspent(), or getspent_r().
- */
 #ifndef SETSPENT_LOCK
-#  define SETSPENT_LOCK    gwLCr_LOCK_(LC_ALL)
-#  define SETSPENT_UNLOCK  gwLCr_UNLOCK_(LC_ALL)
+
+   /* setspent() has races with other threads concurrently executing any of:
+    *            itself, endspent(), getspent(), or getspent_r(). */
+#  define SETSPENT_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define SETSPENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* setstate_r() has races with other threads concurrently executing any of:
- *              itself, initstate_r(), random_r(), or srandom_r().
- */
 #ifndef SETSTATE_R_LOCK
-#  define SETSTATE_R_LOCK    gwENVr_LOCK_
-#  define SETSTATE_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* setstate_r() has races with other threads concurrently executing any of:
+    *              itself, initstate_r(), random_r(), or srandom_r(). */
+#  define SETSTATE_R_LOCK    GENw_LOCK_
+#  define SETSTATE_R_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* setttyent() has races with other threads concurrently executing any of:
- *             itself, endttyent(), getttyent(), or getttynam().
- */
 #ifndef SETTTYENT_LOCK
-#  define SETTTYENT_LOCK    gwENVr_LOCK_
-#  define SETTTYENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* setttyent() has races with other threads concurrently executing any of:
+    *             itself, endttyent(), getttyent(), or getttynam(). */
+#  define SETTTYENT_LOCK    GENw_LOCK_
+#  define SETTTYENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* setusershell() is unsuitable for a multi-threaded environment. */
-/*#define SETUSERSHELL_LOCK  assert(0)*/
+#ifndef SETUSERSHELL_LOCK
+#  define SETUSERSHELL_LOCK                              \
+#    error setusershell not suitable for multi-threaded operation
+#endif
 
-/* setutent() has races with other threads concurrently executing any of:
- *            itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *            getutent(), getutid(), getutline(), getutxent(), getutxid(),
- *            glob(), login(), logout(), pututline(), pututxline(),
- *            setutxent(), utmpname(), or wordexp().
- */
 #ifndef SETUTENT_LOCK
-#  define SETUTENT_LOCK    gwENVr_LOCK_
-#  define SETUTENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* setutent() Obsolete; use setutxent() instead
+    * setutent() has races with other threads concurrently executing any of:
+    *            itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *            getutent(), getutid(), getutline(), getutxent(), getutxid(),
+    *            getutxline(), glob(), login(), logout(), pututline(),
+    *            pututxline(), setutxent(), utmpname(), or wordexp(). */
+#  define SETUTENT_LOCK    GENw_LOCK_
+#  define SETUTENT_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* setutxent() has races with other threads concurrently executing any of:
- *             itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *             getutent(), getutid(), getutline(), getutxent(), getutxid(),
- *             glob(), login(), logout(), pututline(), pututxline(),
- *             setutent(), utmpname(), or wordexp().
- */
 #ifndef SETUTXENT_LOCK
-#  define SETUTXENT_LOCK    gwENVr_LOCK_
-#  define SETUTXENT_UNLOCK  gwENVr_UNLOCK_
+
+   /* setutxent() has races with other threads concurrently executing any of:
+    *             itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *             getutent(), getutid(), getutline(), getutxent(), getutxid(),
+    *             getutxline(), glob(), login(), logout(), pututline(),
+    *             pututxline(), setutent(), utmpname(), or wordexp(). */
+#  define SETUTXENT_LOCK    GENw_LOCK_
+#  define SETUTXENT_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef SGETSPENT_LOCK
-#  define SGETSPENT_LOCK    gwENVr_LOCK_
-#  define SGETSPENT_UNLOCK  gwENVr_UNLOCK_
+#  define SGETSPENT_LOCK    GENw_LOCK_
+#  define SGETSPENT_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef SGETSPENT_R_LOCK
@@ -3868,69 +3043,73 @@
 #  define SHM_UNLINK_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* siginterrupt() is unsuitable for a multi-threaded environment. */
-/*#define SIGINTERRUPT_LOCK  assert(0)*/
+#ifndef SIGINTERRUPT_LOCK
 
-/* sleep() is vulnerable to signal SIGCHLD/linux */
+   /* siginterrupt() Obsolete; use sigaction(2) with the SA_RESTART flag
+    *                instead */
+#  define SIGINTERRUPT_LOCK    GENw_LOCK_
+#  define SIGINTERRUPT_UNLOCK  GENw_UNLOCK_
+#endif
+
 #ifndef SLEEP_LOCK
+
+   /* sleep() is vulnerable to signal SIGCHLD/linux */
 #  define SLEEP_LOCK    NOOP
 #  define SLEEP_UNLOCK  NOOP
 #endif
 
+#ifndef SNPRINTF_LOCK
+#  define SNPRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define SNPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
+#ifndef SPRINTF_LOCK
+#  define SPRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define SPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
-/* srand48() has races with other threads concurrently executing any of:
- *           itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
- *           mrand48(), nrand48(), or seed48().
- */
 #ifndef SRAND48_LOCK
-#  define SRAND48_LOCK    gwENVr_LOCK_
-#  define SRAND48_UNLOCK  gwENVr_UNLOCK_
+
+   /* srand48() has races with other threads concurrently executing any of:
+    *           itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
+    *           mrand48(), nrand48(), or seed48(). */
+#  define SRAND48_LOCK    GENw_LOCK_
+#  define SRAND48_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* srand48_r() has races with other threads concurrently executing any of:
- *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
- *             lrand48_r(), mrand48_r(), nrand48_r(), or seed48_r().
- */
 #ifndef SRAND48_R_LOCK
-#  define SRAND48_R_LOCK    gwENVr_LOCK_
-#  define SRAND48_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* srand48_r() has races with other threads concurrently executing any of:
+    *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
+    *             lrand48_r(), mrand48_r(), nrand48_r(), or seed48_r(). */
+#  define SRAND48_R_LOCK    GENw_LOCK_
+#  define SRAND48_R_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* srandom_r() has races with other threads concurrently executing any of:
- *             itself, initstate_r(), random_r(), or setstate_r().
- */
 #ifndef SRANDOM_R_LOCK
-#  define SRANDOM_R_LOCK    gwENVr_LOCK_
-#  define SRANDOM_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* srandom_r() has races with other threads concurrently executing any of:
+    *             itself, initstate_r(), random_r(), or setstate_r(). */
+#  define SRANDOM_R_LOCK    GENw_LOCK_
+#  define SRANDOM_R_UNLOCK  GENw_UNLOCK_
 #endif
 
+#ifndef SSCANF_LOCK
+#  define SSCANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define SSCANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef SSIGNAL_LOCK
-#  define SSIGNAL_LOCK    NOOP
-#  define SSIGNAL_UNLOCK  NOOP
+#  define SSIGNAL_LOCK    GENr_LOCK_
+#  define SSIGNAL_UNLOCK  GENr_UNLOCK_
 #endif
 
 #ifndef STRCASECMP_LOCK
-#  ifdef LC_CTYPE
-#    define STRCASECMP_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define STRCASECMP_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define STRCASECMP_LOCK    LCr_LOCK_(LC_ALL)
-#    define STRCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef STRCASECMP_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define STRCASECMP_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define STRCASECMP_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define STRCASECMP_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define STRCASECMP_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define STRCASECMP_LOCK    LCr_LOCK_(LC_ALL)
-#    define STRCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* strcasecmp() The POSIX Standard says results are undefined unless
+    *              LC_CTYPE is the POSIX locale */
+#  define STRCASECMP_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef STRCASESTR_LOCK
@@ -3938,42 +3117,97 @@
 #  define STRCASESTR_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-
-
-
-
-
-
-
-
-
-
-
-#ifndef STRNCASECMP_LOCK
-#  ifdef LC_CTYPE
-#    define STRNCASECMP_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define STRNCASECMP_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define STRNCASECMP_LOCK    LCr_LOCK_(LC_ALL)
-#    define STRNCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef STRNCASECMP_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define STRNCASECMP_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define STRNCASECMP_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define STRNCASECMP_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define STRNCASECMP_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define STRNCASECMP_LOCK    LCr_LOCK_(LC_ALL)
-#    define STRNCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#ifndef STRCOLL_LOCK
+#  define STRCOLL_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRCOLL_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
+#ifndef STRERROR_LOCK
+#  define STRERROR_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define STRERROR_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
+#endif
 
+#ifndef STRERROR_L_LOCK
+#  define STRERROR_L_LOCK    NOOP
+#  define STRERROR_L_UNLOCK  NOOP
+#endif
 
+#ifndef STRERROR_R_LOCK
+#  define STRERROR_R_LOCK    NOOP
+#  define STRERROR_R_UNLOCK  NOOP
+#endif
 
+#ifndef STRFMON_LOCK
+#  define STRFMON_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRFMON_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef STRFMON_L_LOCK
+#  define STRFMON_L_LOCK    NOOP
+#  define STRFMON_L_UNLOCK  NOOP
+#endif
+
+#ifndef STRFROMD_LOCK
+
+   /* strfromd() Asynchronous unsafe */
+#  define STRFROMD_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRFROMD_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef STRFROMF_LOCK
+
+   /* strfromf() Asynchronous unsafe */
+#  define STRFROMF_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRFROMF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef STRFROML_LOCK
+
+   /* strfroml() Asynchronous unsafe */
+#  define STRFROML_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRFROML_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef STRFTIME_LOCK
+
+   /* strftime() Use Perl_sv_strftime_tm() or Perl_sv_strftime_ints() instead
+    */
+#  define STRFTIME_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define STRFTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef STRFTIME_L_LOCK
+#  define STRFTIME_L_LOCK    NOOP
+#  define STRFTIME_L_UNLOCK  NOOP
+#endif
+
+#ifndef STRNCASECMP_LOCK
+
+   /* strncasecmp() The POSIX Standard says results are undefined unless
+    *               LC_CTYPE is the POSIX locale */
+#  define STRNCASECMP_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRNCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef STRPTIME_LOCK
+#  define STRPTIME_LOCK    ENVr_LCr_LOCK_(LC_ALL)
+#  define STRPTIME_UNLOCK  ENVr_LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef STRSIGNAL_LOCK
+#  define STRSIGNAL_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define STRSIGNAL_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef STRTOD_LOCK
+#  define STRTOD_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRTOD_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef STRTOF_LOCK
+#  define STRTOF_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRTOF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef STRTOIMAX_LOCK
 #  define STRTOIMAX_LOCK    LCr_LOCK_(LC_ALL)
@@ -3981,8 +3215,10 @@
 #endif
 
 #ifndef STRTOK_LOCK
-#  define STRTOK_LOCK    gwENVr_LOCK_
-#  define STRTOK_UNLOCK  gwENVr_UNLOCK_
+
+   /* strtok() To avoid needing to lock, use strtok_r() instead */
+#  define STRTOK_LOCK    GENw_LOCK_
+#  define STRTOK_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef STRTOL_LOCK
@@ -3990,6 +3226,10 @@
 #  define STRTOL_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
+#ifndef STRTOLD_LOCK
+#  define STRTOLD_LOCK    LCr_LOCK_(LC_ALL)
+#  define STRTOLD_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef STRTOLL_LOCK
 #  define STRTOLL_LOCK    LCr_LOCK_(LC_ALL)
@@ -4021,18 +3261,23 @@
 #  define STRTOUQ_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
+#ifndef STRVERSCMP_LOCK
+#  define STRVERSCMP_LOCK    NOOP
+#  define STRVERSCMP_UNLOCK  NOOP
+#endif
 
 #ifndef STRXFRM_LOCK
 #  define STRXFRM_LOCK    LCr_LOCK_(LC_ALL)
 #  define STRXFRM_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* swapcontext() has races with other threads concurrently executing any of:
- *               itself, getcontext(), makecontext(), or setcontext().
- */
 #ifndef SWAPCONTEXT_LOCK
-#  define SWAPCONTEXT_LOCK    gwENVr_LOCK_
-#  define SWAPCONTEXT_UNLOCK  gwENVr_UNLOCK_
+
+   /* swapcontext() has races with other threads concurrently executing any
+    *               of: itself, getcontext(), makecontext(), or setcontext().
+    */
+#  define SWAPCONTEXT_LOCK    GENw_LOCK_
+#  define SWAPCONTEXT_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef SWPRINTF_LOCK
@@ -4040,6 +3285,10 @@
 #  define SWPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
+#ifndef SWSCANF_LOCK
+#  define SWSCANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define SWSCANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef SYSCONF_LOCK
 #  define SYSCONF_LOCK    ENVr_LOCK_
@@ -4051,25 +3300,40 @@
 #  define SYSLOG_UNLOCK  ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* tdelete() has races with other threads concurrently executing any of:
- *           itself, tfind(), or tsearch().
- */
+#ifndef SYSTEM_LOCK
+#  ifndef __GLIBC__
+
+     /* system() Some implementations are not-thread safe; See POSIX Standard
+      */
+#    define SYSTEM_LOCK    NOOP
+#    define SYSTEM_UNLOCK  NOOP
+#  else
+#    define SYSTEM_LOCK    NOOP
+#    define SYSTEM_UNLOCK  NOOP
+#  endif
+#endif
+
 #ifndef TDELETE_LOCK
-#  define TDELETE_LOCK    gwENVr_LOCK_
-#  define TDELETE_UNLOCK  gwENVr_UNLOCK_
+
+   /* tdelete() has races with other threads concurrently executing any of:
+    *           itself, tfind(), or tsearch(). */
+#  define TDELETE_LOCK    GENw_LOCK_
+#  define TDELETE_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef TEMPNAM_LOCK
+
+   /* tempnam() Obsolete; use mkstemp() or tmpfile() instead */
 #  define TEMPNAM_LOCK    ENVr_LOCK_
 #  define TEMPNAM_UNLOCK  ENVr_UNLOCK_
 #endif
 
-/* tfind() has races with other threads concurrently executing any of: itself,
- *         tdelete(), or tsearch().
- */
 #ifndef TFIND_LOCK
-#  define TFIND_LOCK    gwENVr_LOCK_
-#  define TFIND_UNLOCK  gwENVr_UNLOCK_
+
+   /* tfind() has races with other threads concurrently executing any of:
+    *         itself, tdelete(), or tsearch(). */
+#  define TFIND_LOCK    GENw_LOCK_
+#  define TFIND_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef TIMEGM_LOCK
@@ -4082,248 +3346,118 @@
 #  define TIMELOCAL_UNLOCK  ENVr_LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* tmpnam() macros only valid if !s */
 #ifndef TMPNAM_LOCK
+
+   /* tmpnam() Obsolete; use mkstemp() or tmpfile() instead
+    * tmpnam() macros only valid if !s */
 #  define TMPNAM_LOCK    NOOP
 #  define TMPNAM_UNLOCK  NOOP
 #endif
 
 #ifndef TOLOWER_LOCK
-#  ifdef LC_CTYPE
-#    define TOLOWER_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOLOWER_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOLOWER_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOLOWER_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef TOLOWER_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define TOLOWER_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define TOLOWER_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define TOLOWER_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOLOWER_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOLOWER_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOLOWER_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* tolower() Use one of the Perl toUPPER family of macros instead */
+#  define TOLOWER_LOCK    NOOP
+#  define TOLOWER_UNLOCK  NOOP
 #endif
 
 #ifndef TOLOWER_L_LOCK
-#  ifdef LC_CTYPE
-#    define TOLOWER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOLOWER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef TOLOWER_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define TOLOWER_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define TOLOWER_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define TOLOWER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOLOWER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* tolower_l() Use one of the Perl toUPPER family of macros instead */
+#  define TOLOWER_L_LOCK    NOOP
+#  define TOLOWER_L_UNLOCK  NOOP
 #endif
 
 #ifndef TOUPPER_LOCK
-#  ifdef LC_CTYPE
-#    define TOUPPER_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOUPPER_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOUPPER_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOUPPER_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef TOUPPER_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define TOUPPER_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define TOUPPER_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define TOUPPER_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOUPPER_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOUPPER_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOUPPER_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* toupper() Use one of the Perl toUPPER family of macros instead */
+#  define TOUPPER_LOCK    NOOP
+#  define TOUPPER_UNLOCK  NOOP
 #endif
 
 #ifndef TOUPPER_L_LOCK
-#  ifdef LC_CTYPE
-#    define TOUPPER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOUPPER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef TOUPPER_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define TOUPPER_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define TOUPPER_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define TOUPPER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOUPPER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* toupper_l() Use one of the Perl toUPPER family of macros instead */
+#  define TOUPPER_L_LOCK    NOOP
+#  define TOUPPER_L_UNLOCK  NOOP
 #endif
 
 #ifndef TOWCTRANS_LOCK
-#  ifdef LC_CTYPE
-#    define TOWCTRANS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOWCTRANS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOWCTRANS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOWCTRANS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef TOWCTRANS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define TOWCTRANS_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define TOWCTRANS_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define TOWCTRANS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOWCTRANS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOWCTRANS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOWCTRANS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define TOWCTRANS_LOCK    NOOP
+#  define TOWCTRANS_UNLOCK  NOOP
 #endif
 
 #ifndef TOWLOWER_LOCK
-#  ifdef LC_CTYPE
-#    define TOWLOWER_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define TOWLOWER_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define TOWLOWER_LOCK    LCr_LOCK_(LC_ALL)
-#    define TOWLOWER_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef TOWLOWER_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define TOWLOWER_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define TOWLOWER_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define TOWLOWER_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define TOWLOWER_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define TOWLOWER_LOCK    LCr_LOCK_(LC_ALL)
-#    define TOWLOWER_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* towlower() Use one of the Perl toLOWER family of macros */
+#  define TOWLOWER_LOCK    LCr_LOCK_(LC_ALL)
+#  define TOWLOWER_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef TOWLOWER_L_LOCK
-#  ifdef LC_CTYPE
-#    define TOWLOWER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOWLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOWLOWER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOWLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef TOWLOWER_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define TOWLOWER_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define TOWLOWER_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define TOWLOWER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOWLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOWLOWER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOWLOWER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define TOWLOWER_L_LOCK    NOOP
+#  define TOWLOWER_L_UNLOCK  NOOP
 #endif
 
 #ifndef TOWUPPER_LOCK
-#  ifdef LC_CTYPE
-#    define TOWUPPER_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define TOWUPPER_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define TOWUPPER_LOCK    LCr_LOCK_(LC_ALL)
-#    define TOWUPPER_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef TOWUPPER_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define TOWUPPER_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define TOWUPPER_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define TOWUPPER_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define TOWUPPER_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define TOWUPPER_LOCK    LCr_LOCK_(LC_ALL)
-#    define TOWUPPER_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* towupper() Use one of the Perl toLOWER family of macros */
+#  define TOWUPPER_LOCK    LCr_LOCK_(LC_ALL)
+#  define TOWUPPER_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef TOWUPPER_L_LOCK
-#  ifdef LC_CTYPE
-#    define TOWUPPER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOWUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOWUPPER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOWUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef TOWUPPER_L_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define TOWUPPER_L_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define TOWUPPER_L_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define TOWUPPER_L_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define TOWUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define TOWUPPER_L_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define TOWUPPER_L_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define TOWUPPER_L_LOCK    NOOP
+#  define TOWUPPER_L_UNLOCK  NOOP
 #endif
 
-/* tsearch() has races with other threads concurrently executing any of:
- *           itself, tdelete(), or tfind().
- */
 #ifndef TSEARCH_LOCK
-#  define TSEARCH_LOCK    gwENVr_LOCK_
-#  define TSEARCH_UNLOCK  gwENVr_UNLOCK_
+
+   /* tsearch() has races with other threads concurrently executing any of:
+    *           itself, tdelete(), or tfind(). */
+#  define TSEARCH_LOCK    GENw_LOCK_
+#  define TSEARCH_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* ttyname() has races with other threads concurrently executing either itself
- *           or login_tty.
- */
 #ifndef TTYNAME_LOCK
-#  define TTYNAME_LOCK    gwENVr_LOCK_
-#  define TTYNAME_UNLOCK  gwENVr_UNLOCK_
+
+   /* ttyname() Use ttyname_r() instead
+    * ttyname() has races with other threads concurrently executing either
+    *           itself or login_tty. */
+#  define TTYNAME_LOCK    GENw_LOCK_
+#  define TTYNAME_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* ttyslot() is unsuitable for a multi-threaded environment. */
-/*#define TTYSLOT_LOCK  assert(0)*/
+#ifndef TTYSLOT_LOCK
+#  define TTYSLOT_LOCK                              \
+#    error ttyslot not suitable for multi-threaded operation
+#endif
 
-/* twalk() has races with other threads concurrently executing either itself
- *         or twalk_r.
- */
 #ifndef TWALK_LOCK
-#  define TWALK_LOCK    gwENVr_LOCK_
-#  define TWALK_UNLOCK  gwENVr_UNLOCK_
+
+   /* twalk() has races with other threads concurrently executing either
+    *         itself or twalk_r. */
+#  define TWALK_LOCK    GENw_LOCK_
+#  define TWALK_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* twalk_r() has races with other threads concurrently executing either itself
- *           or twalk.
- */
 #ifndef TWALK_R_LOCK
-#  define TWALK_R_LOCK    gwENVr_LOCK_
-#  define TWALK_R_UNLOCK  gwENVr_UNLOCK_
+
+   /* twalk_r() GNU extension
+    * twalk_r() has races with other threads concurrently executing either
+    *           itself or twalk. */
+#  define TWALK_R_LOCK    GENw_LOCK_
+#  define TWALK_R_UNLOCK  GENw_UNLOCK_
 #endif
 
 #ifndef TZSET_LOCK
-#  define TZSET_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#  define TZSET_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
+#  define TZSET_LOCK    GENw_ENVr_LCr_LOCK_(LC_ALL)
+#  define TZSET_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALL)
+#endif
+
+#ifndef UNGETWC_LOCK
+#  define UNGETWC_LOCK    NOOP
+#  define UNGETWC_UNLOCK  NOOP
 #endif
 
 #ifndef UNSETENV_LOCK
@@ -4331,33 +3465,37 @@
 #  define UNSETENV_UNLOCK  ENVw_UNLOCK_
 #endif
 
-/* updwtmp() is vulnerable to signal ALRM */
 #ifndef UPDWTMP_LOCK
+
+   /* updwtmp() Not in POSIX Standard
+    * updwtmp() is vulnerable to signal ALRM */
 #  define UPDWTMP_LOCK    NOOP
 #  define UPDWTMP_UNLOCK  NOOP
 #endif
 
-/* utmpname() has races with other threads concurrently executing any of:
- *            itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *            getutent(), getutid(), getutline(), getutxent(), getutxid(),
- *            glob(), login(), logout(), pututline(), pututxline(),
- *            setutent(), setutxent(), or wordexp().
- */
 #ifndef UTMPNAME_LOCK
-#  define UTMPNAME_LOCK    gwENVr_LOCK_
-#  define UTMPNAME_UNLOCK  gwENVr_UNLOCK_
+
+   /* utmpname() has races with other threads concurrently executing any of:
+    *            itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *            getutent(), getutid(), getutline(), getutxent(), getutxid(),
+    *            getutxline(), glob(), login(), logout(), pututline(),
+    *            pututxline(), setutent(), setutxent(), or wordexp(). */
+#  define UTMPNAME_LOCK    GENw_LOCK_
+#  define UTMPNAME_UNLOCK  GENw_UNLOCK_
 #endif
 
-/* va_arg() macros only valid if arg-ap-is-locale-to-its-thread */
 #ifndef VA_ARG_LOCK
+
+   /* va_arg() macros only valid if arg-ap-is-locale-to-its-thread */
 #  define VA_ARG_LOCK    NOOP
 #  define VA_ARG_UNLOCK  NOOP
 #endif
 
-/* valloc() must be called at least once in single-threaded mode to enable any
- *          semblance of thread-safety in subsequent calls.
- */
 #ifndef VALLOC_LOCK
+
+   /* valloc() must be called at least once in single-threaded mode to enable
+    *          thread-safety in subsequent calls when in multi-threaded mode.
+    */
 #  define VALLOC_LOCK    NOOP
 #  define VALLOC_UNLOCK  NOOP
 #endif
@@ -4367,6 +3505,10 @@
 #  define VASPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
+#ifndef VDPRINTF_LOCK
+#  define VDPRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define VDPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef VERR_LOCK
 #  define VERR_LOCK    LCr_LOCK_(LC_ALL)
@@ -4383,17 +3525,45 @@
 #  define VERSIONSORT_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
+#ifndef VFPRINTF_LOCK
+#  define VFPRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define VFPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
+#ifndef VFSCANF_LOCK
+#  define VFSCANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define VFSCANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef VFWPRINTF_LOCK
 #  define VFWPRINTF_LOCK    LCr_LOCK_(LC_ALL)
 #  define VFWPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
+#ifndef VPRINTF_LOCK
+#  define VPRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define VPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
+#ifndef VSCANF_LOCK
+#  define VSCANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define VSCANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
+#ifndef VSNPRINTF_LOCK
+#  define VSNPRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define VSNPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
+#ifndef VSPRINTF_LOCK
+#  define VSPRINTF_LOCK    LCr_LOCK_(LC_ALL)
+#  define VSPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
+#ifndef VSSCANF_LOCK
+#  define VSSCANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define VSSCANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef VSWPRINTF_LOCK
 #  define VSWPRINTF_LOCK    LCr_LOCK_(LC_ALL)
@@ -4430,197 +3600,84 @@
 #  define WARNX_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* wcrtomb() macros only valid if !ps */
 #ifndef WCRTOMB_LOCK
-#  ifdef LC_CTYPE
-#    define WCRTOMB_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCRTOMB_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCRTOMB_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCRTOMB_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef WCRTOMB_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCRTOMB_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define WCRTOMB_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCRTOMB_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCRTOMB_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCRTOMB_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCRTOMB_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* wcrtomb() macros only valid if !ps */
+#  define WCRTOMB_LOCK    NOOP
+#  define WCRTOMB_UNLOCK  NOOP
 #endif
 
 #ifndef WCSCASECMP_LOCK
-#  ifdef LC_CTYPE
-#    define WCSCASECMP_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCSCASECMP_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCSCASECMP_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCSCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef WCSCASECMP_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCSCASECMP_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define WCSCASECMP_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCSCASECMP_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCSCASECMP_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCSCASECMP_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCSCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* wcscasecmp() Not in POSIX; not widely implemented */
+#  define WCSCASECMP_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCSCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef WCSCHR_LOCK
-#  ifdef LC_CTYPE
-#    define WCSCHR_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSCHR_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSCHR_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSCHR_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef WCSCHR_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCSCHR_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define WCSCHR_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCSCHR_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSCHR_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSCHR_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSCHR_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define WCSCHR_LOCK    NOOP
+#  define WCSCHR_UNLOCK  NOOP
 #endif
 
+#ifndef WCSCOLL_LOCK
+#  define WCSCOLL_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCSCOLL_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef WCSFTIME_LOCK
-#  define WCSFTIME_LOCK    TSE_TOGGLE_(LC_ALL)
-#  define WCSFTIME_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
+#  define WCSFTIME_LOCK    NOOP
+#  define WCSFTIME_UNLOCK  NOOP
 #endif
 
 #ifndef WCSNCASECMP_LOCK
-#  ifdef LC_CTYPE
-#    define WCSNCASECMP_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCSNCASECMP_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCSNCASECMP_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCSNCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef WCSNCASECMP_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCSNCASECMP_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define WCSNCASECMP_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCSNCASECMP_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCSNCASECMP_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCSNCASECMP_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCSNCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+
+   /* wcsncasecmp() Not in POSIX; not widely implemented */
+#  define WCSNCASECMP_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCSNCASECMP_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* wcsnrtombs() macros only valid if !ps */
 #ifndef WCSNRTOMBS_LOCK
-#  ifdef LC_CTYPE
-#    define WCSNRTOMBS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSNRTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSNRTOMBS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSNRTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef WCSNRTOMBS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCSNRTOMBS_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define WCSNRTOMBS_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCSNRTOMBS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSNRTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSNRTOMBS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSNRTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* wcsnrtombs() macros only valid if !ps */
+#  define WCSNRTOMBS_LOCK    NOOP
+#  define WCSNRTOMBS_UNLOCK  NOOP
 #endif
 
 #ifndef WCSRCHR_LOCK
-#  ifdef LC_CTYPE
-#    define WCSRCHR_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSRCHR_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSRCHR_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSRCHR_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef WCSRCHR_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCSRCHR_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define WCSRCHR_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCSRCHR_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSRCHR_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSRCHR_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSRCHR_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define WCSRCHR_LOCK    NOOP
+#  define WCSRCHR_UNLOCK  NOOP
 #endif
 
-/* wcsrtombs() macros only valid if !ps */
 #ifndef WCSRTOMBS_LOCK
-#  ifdef LC_CTYPE
-#    define WCSRTOMBS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSRTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSRTOMBS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSRTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef WCSRTOMBS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCSRTOMBS_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define WCSRTOMBS_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCSRTOMBS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSRTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSRTOMBS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSRTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* wcsrtombs() macros only valid if !ps */
+#  define WCSRTOMBS_LOCK    NOOP
+#  define WCSRTOMBS_UNLOCK  NOOP
 #endif
 
+#ifndef WCSTOD_LOCK
+#  define WCSTOD_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCSTOD_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
+#ifndef WCSTOF_LOCK
+#  define WCSTOF_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCSTOF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef WCSTOIMAX_LOCK
 #  define WCSTOIMAX_LOCK    LCr_LOCK_(LC_ALL)
 #  define WCSTOIMAX_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
+#ifndef WCSTOLD_LOCK
+#  define WCSTOLD_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCSTOLD_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 #ifndef WCSTOMBS_LOCK
-#  ifdef LC_CTYPE
-#    define WCSTOMBS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSTOMBS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef WCSTOMBS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCSTOMBS_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define WCSTOMBS_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCSTOMBS_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCSTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCSTOMBS_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCSTOMBS_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+#  define WCSTOMBS_LOCK    NOOP
+#  define WCSTOMBS_UNLOCK  NOOP
 #endif
 
 #ifndef WCSTOUMAX_LOCK
@@ -4629,25 +3686,8 @@
 #endif
 
 #ifndef WCSWIDTH_LOCK
-#  ifdef LC_CTYPE
-#    define WCSWIDTH_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCSWIDTH_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCSWIDTH_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCSWIDTH_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef WCSWIDTH_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCSWIDTH_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define WCSWIDTH_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCSWIDTH_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCSWIDTH_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCSWIDTH_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCSWIDTH_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define WCSWIDTH_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCSWIDTH_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef WCSXFRM_LOCK
@@ -4656,125 +3696,42 @@
 #endif
 
 #ifndef WCTOB_LOCK
-#  ifdef LC_CTYPE
-#    define WCTOB_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCTOB_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCTOB_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCTOB_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
-#endif
-#ifndef WCTOB_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCTOB_LOCK    TSE_TOGGLE__CTYPE_AND(LC_CTYPE)
-#    define WCTOB_UNLOCK  TSE_UNTOGGLE__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCTOB_LOCK    TSE_TOGGLE_(LC_CTYPE)
-#    define WCTOB_UNLOCK  TSE_UNTOGGLE_(LC_CTYPE)
-#  else
-#    define WCTOB_LOCK    TSE_TOGGLE_(LC_ALL)
-#    define WCTOB_UNLOCK  TSE_UNTOGGLE_(LC_ALL)
-#  endif
+
+   /* wctob() Use wcrtomb() instead */
+#  define WCTOB_LOCK    NOOP
+#  define WCTOB_UNLOCK  NOOP
 #endif
 
 #ifndef WCTOMB_LOCK
-#  ifdef LC_CTYPE
-#    define WCTOMB_LOCK    gwENVr_LCr_LOCK_(LC_CTYPE)
-#    define WCTOMB_UNLOCK  gwENVr_LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCTOMB_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#    define WCTOMB_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef WCTOMB_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCTOMB_LOCK    gwENVr_LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define WCTOMB_UNLOCK  gwENVr_LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCTOMB_LOCK    gwENVr_LCr_LOCK_(LC_CTYPE)
-#    define WCTOMB_UNLOCK  gwENVr_LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCTOMB_LOCK    gwENVr_LCr_LOCK_(LC_ALL)
-#    define WCTOMB_UNLOCK  gwENVr_LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define WCTOMB_LOCK    GENw_LCr_LOCK_(LC_ALL)
+#  define WCTOMB_UNLOCK  GENw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef WCTRANS_LOCK
-#  ifdef LC_CTYPE
-#    define WCTRANS_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCTRANS_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCTRANS_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCTRANS_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef WCTRANS_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCTRANS_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define WCTRANS_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCTRANS_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCTRANS_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCTRANS_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCTRANS_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define WCTRANS_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCTRANS_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef WCTYPE_LOCK
-#  ifdef LC_CTYPE
-#    define WCTYPE_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCTYPE_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCTYPE_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCTYPE_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef WCTYPE_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCTYPE_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define WCTYPE_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCTYPE_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCTYPE_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCTYPE_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCTYPE_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define WCTYPE_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCTYPE_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef WCWIDTH_LOCK
-#  ifdef LC_CTYPE
-#    define WCWIDTH_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCWIDTH_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCWIDTH_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCWIDTH_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
-#endif
-#ifndef WCWIDTH_LOCK
-#  ifdef PERL_MUST_DEAL_WITH
-#    define WCWIDTH_LOCK    LCr_LOCK__CTYPE_AND(LC_CTYPE)
-#    define WCWIDTH_UNLOCK  LCr_UNLOCK__CTYPE_AND(LC_CTYPE)
-#  elif defined(LC_CTYPE)
-#    define WCWIDTH_LOCK    LCr_LOCK_(LC_CTYPE)
-#    define WCWIDTH_UNLOCK  LCr_UNLOCK_(LC_CTYPE)
-#  else
-#    define WCWIDTH_LOCK    LCr_LOCK_(LC_ALL)
-#    define WCWIDTH_UNLOCK  LCr_UNLOCK_(LC_ALL)
-#  endif
+#  define WCWIDTH_LOCK    LCr_LOCK_(LC_ALL)
+#  define WCWIDTH_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
-/* wordexp() is vulnerable to signal ALRM
- * wordexp() has races with other threads concurrently executing any of:
- *           itself, endutent(), endutxent(), getlogin(), getlogin_r(),
- *           getutent(), getutid(), getutline(), getutxent(), getutxid(),
- *           glob(), login(), logout(), pututline(), pututxline(), setutent(),
- *           setutxent(), or utmpname().
- */
 #ifndef WORDEXP_LOCK
-#  define WORDEXP_LOCK    gwENVw_LCr_LOCK_(LC_ALL)
-#  define WORDEXP_UNLOCK  gwENVw_LCr_UNLOCK_(LC_ALL)
+
+   /* wordexp() is vulnerable to signal ALRM
+    * wordexp() has races with other threads concurrently executing any of:
+    *           itself, endutent(), endutxent(), getlogin(), getlogin_r(),
+    *           getutent(), getutid(), getutline(), getutxent(), getutxid(),
+    *           getutxline(), glob(), login(), logout(), pututline(),
+    *           pututxline(), setutent(), setutxent(), or utmpname(). */
+#  define WORDEXP_LOCK    ENVw_LCr_LOCK_(LC_ALL)
+#  define WORDEXP_UNLOCK  ENVw_LCr_UNLOCK_(LC_ALL)
 #endif
 
 #ifndef WPRINTF_LOCK
@@ -4782,5 +3739,9 @@
 #  define WPRINTF_UNLOCK  LCr_UNLOCK_(LC_ALL)
 #endif
 
+#ifndef WSCANF_LOCK
+#  define WSCANF_LOCK    LCr_LOCK_(LC_ALL)
+#  define WSCANF_UNLOCK  LCr_UNLOCK_(LC_ALL)
+#endif
 
 /* ex: set ro ft=c: */
