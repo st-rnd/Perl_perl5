@@ -28,8 +28,7 @@ my @signal_issues;  # Accumulated list of functions that are affected by signals
 my @need_single_thread_init;    # Accumulated list of functions that need
                                 # single-thread initialization
 my $preprocessor = "";   # Preprocessor conditional in effect
-my %seen;           # Has this function/preprocessor conditional already been
-                    # in the input?
+my %categories = ( LC_ALL => 1 );
 
 sub open_print_header {
     my ($file, $quote) = @_;
@@ -54,7 +53,7 @@ close DATA;
 
 while (defined (my $line = shift @DATA)) {
     chomp $line;;
-    continu
+    #XXXZcontinu
     next if $line =~ /^\s*$/;
     next if $line =~ m|^\s*//|;
     last if $line =~ /^__END__/;
@@ -128,6 +127,7 @@ while (defined (my $line = shift @DATA)) {
 
         if ($data =~ s/ ^ ( LC_\S+ ) //x) {
             push @categories, $1;
+            $categories{$1} = 1;
             next;
         }
 
@@ -180,6 +180,8 @@ while (defined (my $line = shift @DATA)) {
     croak ("'timer' keyword not associated with signal ALRM")
                                 if $timer && ! grep { $_ eq 'ALRM' } @signals;
 
+    push @categories, "LC_ALL" if defined $locks{locale} && @categories == 0;
+
     # Apply the data to each function.
     foreach my $function (split /\s*,\s*/, $functions) {
         croak("Illegal function syntax: '$function'") if $function =~ /\W/;
@@ -205,7 +207,7 @@ while (defined (my $line = shift @DATA)) {
             $entry{unsuitable} = 1;
             push @unsuitables, $function;
         }
-
+            
         if (@races > 1 || (@races && $races[0] ne "")) {
             $race_tags{$_}{$function} = 1 for @races;
         }
@@ -381,6 +383,27 @@ EOT
 
 #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper \%functions;#, \%race_tags;
 
+print $l <<~EOT;
+    #define LC_ALLb_  LC_INDEX_TO_BIT_(LC_ALL_INDEX_)
+
+    #if defined(LC_CTYPE) && defined(PERL_MUST_DEAL_WITH_MISMATCHED_CTYPE)
+    #  define INCLUDE_CTYPE_  LC_INDEX_TO_BIT_(LC_CTYPE_INDEX_)
+    #else
+    #  define INCLUDE_CTYPE_  0
+    #endif
+    EOT
+
+foreach my $cat (sort keys %categories) {
+    next if $cat eq "LC_ALL";
+    print $l <<~EOT;
+      #ifdef $cat
+      #  define ${cat}b_  LC_INDEX_TO_BIT_(${cat}_INDEX_)|INCLUDE_CTYPE_
+      #else
+      #  define ${cat}b_  LC_ALLb_
+      #endif
+      EOT
+}
+
 # XXX
 foreach my $function (sort name_order keys %functions) {
 
@@ -489,7 +512,7 @@ foreach my $function (sort name_order keys %functions) {
         }
 
         if ($entry->{unsuitable}) {
-            croak("Unsuitable function has a lock")
+            croak("Unsuitable function '$function' has a lock")
                                 if $entry->{locks} || $entry->{categories};
             #print $l "/*#${dindent}define ${FUNC}_LOCK  assert(0)*/\n";
             print $l <<~EOT;
@@ -514,27 +537,6 @@ foreach my $function (sort name_order keys %functions) {
                 # Use at least the locale mutex if locale categories are involved
                 if ($entry->{categories} && ! $entry->{locks}{locale}) {
                     $entry->{locks}{locale} = 'r';
-                }
-
-                # If we have a race and we aren't read locking the generic
-                # lock, we could get deadlock if we lock our mutex, and then
-                # try to lock the generic one.
-
-                # If there is just one race, and it is with itself, then a single
-                # lock is sufficient, but otherwise we will also need a generic
-                # lock.  As explained way above, a single generic lock works to
-                # prevent multiple races from happening, while not increasing the
-                # likelihood of deadlock.   with, we currently only have
-                # two
-                # The signal for a race being with itself is that its tag is the
-                # empty string "".
-                # mutexes, one for locale, and one for everything else.
-                if ( ! $entry->{locks}
-                    || $entry->{races}->@* > 1
-                    || $entry->{races}[0] ne ""#)#)#)
-                    )
-                {
-                    #$entry->{locks}{_generic} = 'r';
                 }
             }
 
@@ -588,20 +590,6 @@ foreach my $function (sort name_order keys %functions) {
                 }
             }
 
-            # If none needed a write lock, but we still need one, change the
-            # first one found that has a read-lock into instead being an
-            # exclusive lock.
-#            if ($need_exclusive) {
-#                for my $ref (\$locale_lock, \$env_lock, \$generic_lock) {
-#                    if ($$ref) {
-#                        $$ref = 'w';
-#                        $has_write_lock = 1;
-#                        $need_exclusive = 0;
-#                        last;
-#                    }
-#                }
-#            }
-
             # If there were no locks at all, but we still need an exclusive
             # lock, change the generic one to be one.
             if ($need_exclusive) {
@@ -642,10 +630,11 @@ foreach my $function (sort name_order keys %functions) {
 
                 $name .= "_" if $env_lock || $generic_lock;
                 $name .= $locale_lock;
+                my $cats = join "|", map { "${_}b_" } $entry->{categories}->@*;
 
                 print $l <<~EOT;
-                    #${dindent}define ${FUNC}_LOCK    ${name}_LOCK_(LC_ALL)
-                    #${dindent}define ${FUNC}_UNLOCK  ${name}_UNLOCK_(LC_ALL)
+                    #${dindent}define ${FUNC}_LOCK    ${name}_LOCK_($cats)
+                    #${dindent}define ${FUNC}_UNLOCK  ${name}_UNLOCK_($cats)
                     EOT
             }
         }

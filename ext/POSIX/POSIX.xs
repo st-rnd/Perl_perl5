@@ -3674,7 +3674,6 @@ SysRet
 setuid(uid)
 	Uid_t		uid
 
-/* ENV_READ_LOCK */
 SysRetLong
 sysconf(name)
 	int		name
