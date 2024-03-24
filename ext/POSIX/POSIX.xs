@@ -1722,7 +1722,9 @@ fix_win32_tzenv(void)
         newenv = (char*)malloc((strlen(perl_tz_env) + 4) * sizeof(char));
         if (newenv != NULL) {
             sprintf(newenv, "TZ=%s", perl_tz_env);
+            PUTENV_LOCK;
             putenv(newenv);
+            PUTENV_UNLOCK;
             if (oldenv != NULL)
                 free(oldenv);
             oldenv = newenv;
@@ -3366,7 +3368,9 @@ strtol(str, base = 0)
 	char *unparsed;
     PPCODE:
 	if (base == 0 || inRANGE(base, 2, 36)) {
+            STRTOL_LOCK;
             num = strtol(str, &unparsed, base);
+            STRTOL_UNLOCK;
 #if IVSIZE < LONGSIZE
             if (num < IV_MIN || num > IV_MAX)
                 PUSHs(sv_2mortal(newSVnv((NV)num)));
@@ -3400,7 +3404,9 @@ strtoul(str, base = 0)
 	PERL_UNUSED_VAR(str);
 	PERL_UNUSED_VAR(base);
 	if (base == 0 || inRANGE(base, 2, 36)) {
+            STRTOUL_LOCK;
             num = strtoul(str, &unparsed, base);
+            STRTOUL_UNLOCK;
 #if UVSIZE < LONGSIZE
             if (num > UV_MAX)
                 PUSHs(sv_2mortal(newSVnv((NV)num)));
@@ -3635,7 +3641,9 @@ cuserid(s = 0)
 	char *		s = 0;
     CODE:
 #ifdef HAS_CUSERID
+  CUSERID_LOCK;
   RETVAL = cuserid(s);
+  CUSERID_UNLOCK;
 #else
   PERL_UNUSED_VAR(s);
   RETVAL = 0;
@@ -3675,6 +3683,7 @@ SysRet
 setuid(uid)
 	Uid_t		uid
 
+# /* lock */
 SysRetLong
 sysconf(name)
 	int		name

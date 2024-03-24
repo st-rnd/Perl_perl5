@@ -520,7 +520,8 @@ foreach my $function (sort name_order keys %functions) {
                 #${dindent}  error $function not suitable for multi-threaded operation
                 EOT
         }
-        elsif (! $entry->{locks} && ! $entry->{races}) {
+        elsif (! $entry->{locks} && ! $entry->{races} && ! $entry->{categories})
+        {
 
             # No race, no lock, no op.
             print $l <<~EOT;
@@ -531,14 +532,7 @@ foreach my $function (sort name_order keys %functions) {
         else {
 
             # If we have a race but no other reason to lock, we do need a mutex;
-            if ($entry->{races}) {
-                $need_exclusive = 1;
-
-                # Use at least the locale mutex if locale categories are involved
-                if ($entry->{categories} && ! $entry->{locks}{locale}) {
-                    $entry->{locks}{locale} = 'r';
-                }
-            }
+            $need_exclusive = 1 if $entry->{races};
 
             my $locale_lock = delete $entry->{locks}{locale} // "";
             my $env_lock = delete $entry->{locks}{env} // "";
@@ -605,12 +599,10 @@ foreach my $function (sort name_order keys %functions) {
             # write as well.  Note that there is no libc call (nor likely to
             # ever be one added) that changes both locale and env.
             # XXX
-            #$generic_lock = 'r' if $generic_lock eq "" && $locale_lock eq "w";
             $generic_lock = 'r' if $generic_lock eq ""
                                 && $env_lock eq ""
                                 && $locale_lock eq "w";
 
-            $locale_lock = 'LC' . $locale_lock if $locale_lock;
             $env_lock = 'ENV' . $env_lock if $env_lock;
             $generic_lock = 'GEN' . $generic_lock if $generic_lock;
 
@@ -620,22 +612,31 @@ foreach my $function (sort name_order keys %functions) {
             $name .= $env_lock if $env_lock;
 
             # Ready to output if no locale issues are involved
-            if (! $locale_lock) {
+            if (! $locale_lock && ! $entry->{categories}) {
                 print $l <<~EOT;
                     #${dindent}define ${FUNC}_LOCK    ${name}_LOCK_
                     #${dindent}define ${FUNC}_UNLOCK  ${name}_UNLOCK_
                     EOT
             }
             else {
-
-                $name .= "_" if $env_lock || $generic_lock;
-                $name .= $locale_lock;
                 my $cats = join "|", map { "${_}b_" } $entry->{categories}->@*;
+                if ($name || $locale_lock) {
+                    $name .= "_" if $name;
+                    $locale_lock = "r" unless $locale_lock;
+                    $name .= "LC$locale_lock";
+                    print $l <<~EOT;
+                        #${dindent}define ${FUNC}_LOCK    ${name}_LOCK_(  $cats)
+                        #${dindent}define ${FUNC}_UNLOCK  ${name}_UNLOCK_($cats)
+                        EOT
+                }
+                else {
+                    print $l <<~EOT;
+                        #${dindent}define ${FUNC}_LOCK    TSE_TOGGLE_(  $cats)
+                        #${dindent}define ${FUNC}_UNLOCK  TSE_UNTOGGLE_($cats)
+                        EOT
+                }
+                $name .= $locale_lock;
 
-                print $l <<~EOT;
-                    #${dindent}define ${FUNC}_LOCK    ${name}_LOCK_($cats)
-                    #${dindent}define ${FUNC}_UNLOCK  ${name}_UNLOCK_($cats)
-                    EOT
             }
         }
     }
@@ -810,8 +811,8 @@ crypt       	| race:crypt
 ctermid         | race:ctermid/!s
 #endif
 
-ctime_r  	| race env locale LC_TIME // Obsolete, use Perl_sv_strftime_ints() instead; has a race because some implementations may call tzset
-ctime       	| race:tmbuf race:asctime env locale LC_TIME // Obsolete, use Perl_sv_strftime_ints() instead
+ctime_r  	| race:tzset env locale LC_TIME // Obsolete, use Perl_sv_strftime_ints() instead
+ctime       	| race:tmbuf race:asctime race:tzset env locale LC_TIME // Obsolete, use Perl_sv_strftime_ints() instead
 cuserid  	| race:cuserid/!string locale
 
 dbm_clearerr,   | race
@@ -1036,9 +1037,7 @@ getwchar_unlocked| race:stdin  // Is thread-safe if flockfile() or ftrylockfile(
 
 glob  	        | race:utent env sig:ALRM timer locale LC_COLLATE
 gmtime_r  	| env locale
-
-gmtime, 	| race:tmbuf env locale
-localtime
+gmtime 	        | race:tmbuf env locale
 
 grantpt  	| locale
 
@@ -1114,10 +1113,8 @@ iswxdigit_l
 
 l64a  	        | race:l64a
 localeconv  	| race:localeconv locale LC_NUMERIC LC_MONETARY  // Use Perl_localeconv() instead
-
-// 'race:' because some implementations may call tzset
-localtime_r  	| race env locale
-
+localtime       | race:tmbuf race:tzset env locale
+localtime_r  	| race:tzset env locale
 login, logout  	| race:utent sig:ALRM timer  // Not in POSIX Standard
 login_tty  	| race:ttyname
 logwtmp  	| sig:ALRM timer  // Not in POSIX Standard
@@ -1137,9 +1134,7 @@ mcheck_check_all,| race:mcheck const:malloc_hooks
 mcheck_pedantic,
 mcheck, mprobe
 
-// 'race' because calls tzset
-mktime  	| race env locale
-
+mktime  	| race:tzset env locale
 mtrace, muntrace| U
 nan, nanf, nanl | locale
 nftw        	| cwd   // chdir() in another thread will mess this up
@@ -1236,8 +1231,7 @@ strfmon_l       | LC_MONETARY
 strfromd,       | locale LC_NUMERIC  // Asynchronous unsafe
 strfromf, strfroml
 
-// 'race:' because some implementations may call tzset
-strftime  	| race env locale LC_TIME  // Use Perl_sv_strftime_tm() or Perl_sv_strftime_ints() instead
+strftime  	| race:tzset env locale LC_TIME  // Use Perl_sv_strftime_tm() or Perl_sv_strftime_ints() instead
 
 strftime_l  	| LC_TIME
 strptime  	| env locale LC_TIME
@@ -1309,7 +1303,7 @@ twalk_r  	| race:root  // GNU extension
 //
 // This means that tzset() must have an exclusive lock, as well as the others
 // listed that call it.
-tzset  	        | race env locale
+tzset  	        | race:tzset env locale
 
 ungetwc         | LC_CTYPE
 updwtmp  	| sig:ALRM timer  // Not in POSIX Standard

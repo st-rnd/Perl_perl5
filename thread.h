@@ -297,6 +297,7 @@
     STMT_START {                                                    \
         MUTEX_LOCK(&(mutex)->lock);                                 \
         (mutex)->readers_count++;                                   \
+                DEBUG_Lv(PerlIO_printf(Perl_debug_log, "new all threads reader count is %zd\n", (mutex)->readers_count));\
         MUTEX_UNLOCK(&(mutex)->lock);                               \
     } STMT_END
 
@@ -304,6 +305,7 @@
     STMT_START {                                                    \
         MUTEX_LOCK(&(mutex)->lock);                                 \
         (mutex)->readers_count--;                                   \
+                DEBUG_Lv(PerlIO_printf(Perl_debug_log, "new all threads reader count is %zd\n", (mutex)->readers_count));\
         if ((mutex)->readers_count <= 0) {                          \
             assert((mutex)->readers_count == 0);                    \
             COND_SIGNAL(&(mutex)->wakeup);                          \

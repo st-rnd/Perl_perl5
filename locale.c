@@ -438,8 +438,8 @@ static int debug_initialization = 0;
 #  define WE_MUST_DEAL_WITH_MISMATCHED_CTYPE    /* no longer used; kept for
                                                    possible future use */
 
-#define gwLOCALE_LOCK    LOCALE_LOCK_(0)
-#define gwLOCALE_UNLOCK  LOCALE_UNLOCK_
+//#define gwLOCALE_LOCK    LOCALE_LOCK_(0)
+//#define gwLOCALE_UNLOCK  LOCALE_UNLOCK_
 
 #  define start_DEALING_WITH_MISMATCHED_CTYPE(locale)                          \
         const char * orig_CTYPE_locale = toggle_locale_c(LC_CTYPE, locale)
@@ -2211,7 +2211,7 @@ S_bool_setlocale_emulate_safe_i(pTHX_
 #  define TOGGLE_LOCK(i)                                                    \
          STMT_START {                                                       \
             PL_locale_toggle_depth[i]++;                                    \
-            LC_LOCK_i_(i);                                                  \
+            LCw_LOCK_(LC_INDEX_TO_BIT_(i));                                 \
             DEBUG_TOGGLE(i);                                                \
          } STMT_END
 #  define TOGGLE_UNLOCK(i)                                                  \
@@ -2219,7 +2219,7 @@ S_bool_setlocale_emulate_safe_i(pTHX_
             if (PL_locale_toggle_depth[i] < 1) {                            \
                 locale_panic_("toggling down failed");                      \
             }                                                               \
-            LC_UNLOCK_i_(i);                                                \
+            LCw_UNLOCK_(LC_INDEX_TO_BIT_(i));                               \
             PL_locale_toggle_depth[i]--;                                    \
             DEBUG_TOGGLE(i);                                                \
          } STMT_END
@@ -2290,7 +2290,8 @@ Perl_category_lock(pTHX_ const UV mask,
                            "Entering category_lock; mask=%" UVxf
                            ", called from %s: %d\n", mask, file, caller_line));
 
-    gwLOCALE_LOCK;
+    //ENVr_LOCK_;
+    LOCALE_LOCK_(0);
 
     UV working_mask = mask;
 
@@ -2533,7 +2534,8 @@ Perl_category_unlock(pTHX_ const UV mask,
     }
 
     /* Doesn't actually unlock until recursion fully unwound */
-    gwLOCALE_UNLOCK;
+    LOCALE_UNLOCK_;
+    //ENVr_UNLOCK_;
 
     DEBUG_U(PerlIO_printf(Perl_debug_log, "Leaving category_unlock\n"));
 
