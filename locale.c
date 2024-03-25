@@ -9206,13 +9206,15 @@ S_strftime_tm(pTHX_ const char *fmt,
          * khw's Linux box, the maximum result of this is 67 characters, in the
          * km_KH locale.  If a new script comes along that uses 4 UTF-8 bytes
          * per character, and with a similar expansion factor, that would be a
-         * 268:2 byte ratio, or a bit more than 128:1 = 2**7:1.  Some strftime
-         * implementations allow you to say %1000c to pad to 1000 bytes.  This
-         * shows that it is impossible to implement this without a heuristic
-         * (which can fail).  But it indicates we need to be generous in the
-         * upper limit before failing.  The previous heuristic used was too
-         * stingy.  Since the size doubles per iteration, it doesn't take many
-         * to reach the limit */
+         * 268:2 byte ratio, or a bit more than 128:1 = 2**7:1.  As of POSIX
+         * 2008, conforming implementations allow you to specify minimum field
+         * widths, for example %1000c to pad to 1000 bytes.  This shows that it
+         * is impossible to implement this without parsing the format (and
+         * assuming the implementation follows the syntax specified by the
+         * Standard) or using a (potentially wrong) heuristic.  But it
+         * indicates we need to be generous in the upper limit before failing.
+         * The previous heuristic used was too stingy.  Since the size doubles
+         * per iteration, it doesn't take many to reach the limit */
     } while (bufsize < ((1 << 11) + 1) * fmtlen);
 
     /* Here, strftime() returned 0, and it likely wasn't for lack of space.
