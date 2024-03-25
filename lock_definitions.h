@@ -13,146 +13,153 @@
  * Any changes made here will be lost!
  */
 
-/* This file contains macros to wrap their respective function calls to ensure
- * that those calls are thread-safe in a multi-threaded environment.
+/* This file contains macros to wrap their respective libc accesses to ensure
+ * that those accesses are thread-safe in a multi-threaded environment.
  *
- * Most libc functions are already thread-safe without these wrappers, so do
- * not appear here.  The functions that are known to have multi-thread issues
- * are:
+ * Accesses are mostly function calls but there are a few macros and variables
+ * as well.  Most accesses are already thread-safe without these wrappers, so
+ * do not appear here.  The accesses that are known to have multi-thread
+ * issues are:
  *
- * addmntent             gethostbyname2      iswlower           setttyent
- * alphasort             gethostbyname2_r    iswlower_l         setusershell
- * asctime               gethostbyname_r     iswprint           setutent
- * asctime_r             gethostent          iswprint_l         setutxent
- * asprintf              gethostent_r        iswpunct           sgetspent
- * atof                  gethostid           iswpunct_l         sgetspent_r
- * atoi                  getlogin            iswspace           shm_open
- * atol                  getlogin_r          iswspace_l         shm_unlink
- * atoll                 getmntent           iswupper           siginterrupt
- * basename              getmntent_r         iswupper_l         sleep
- * btowc                 getnameinfo         iswxdigit          snprintf
- * catgets               getnetbyaddr        iswxdigit_l        sprintf
- * catopen               getnetbyaddr_r      isxdigit           srand48
- * clearenv              getnetbyname        isxdigit_l         srand48_r
- * clearerr_unlocked     getnetbyname_r      jrand48            srandom_r
- * crypt                 getnetent           jrand48_r          sscanf
- * crypt_gensalt         getnetent_r         l64a               ssignal
- * ctermid               getnetgrent         lcong48            strcasecmp
- * ctime                 getnetgrent_r       lcong48_r          strcasestr
- * ctime_r               getopt              lgamma             strcoll
- * cuserid               getopt_long         lgammaf            strerror
- * dbm_clearerr          getopt_long_only    lgammal            strerror_l
- * dbm_close             getpass             localeconv         strerror_r
- * dbm_delete            getprotobyname      localtime          strfmon
- * dbm_error             getprotobyname_r    localtime_r        strfmon_l
- * dbm_fetch             getprotobynumber    login              strfromd
- * dbm_firstkey          getprotobynumber_r  login_tty          strfromf
- * dbm_nextkey           getprotoent         logout             strfroml
- * dbm_open              getprotoent_r       logwtmp            strftime
- * dbm_store             getpw               lrand48            strftime_l
- * dirname               getpwent            lrand48_r          strncasecmp
- * dlerror               getpwent_r          makecontext        strptime
- * dprintf               getpwnam            mallinfo           strsignal
- * drand48               getpwnam_r          MB_CUR_MAX         strtod
- * drand48_r             getpwuid            mblen              strtof
- * ecvt                  getpwuid_r          mbrlen             strtoimax
- * encrypt               getrpcbyname        mbrtowc            strtok
- * endaliasent           getrpcbyname_r      mbsinit            strtol
- * endfsent              getrpcbynumber      mbsnrtowcs         strtold
- * endgrent              getrpcbynumber_r    mbsrtowcs          strtoll
- * endhostent            getrpcent           mbstowcs           strtoq
- * endnetent             getrpcent_r         mbtowc             strtoul
- * endnetgrent           getrpcport          mcheck             strtoull
- * endprotoent           getservbyname       mcheck_check_all   strtoumax
- * endpwent              getservbyname_r     mcheck_pedantic    strtouq
- * endrpcent             getservbyport       mktime             strverscmp
- * endservent            getservbyport_r     mprobe             strxfrm
- * endspent              getservent          mrand48            swapcontext
- * endttyent             getservent_r        mrand48_r          swprintf
- * endusershell          getspent            mtrace             swscanf
- * endutent              getspent_r          muntrace           sysconf
- * endutxent             getspnam            nan                syslog
- * erand48               getspnam_r          nanf               system
- * erand48_r             getttyent           nanl               tdelete
- * err                   getttynam           newlocale          tempnam
- * error                 getusershell        nftw               tfind
- * error_at_line         getutent            nl_langinfo        timegm
- * errx                  getutid             nrand48            timelocal
- * ether_aton            getutline           nrand48_r          tmpnam
- * ether_ntoa            getutxent           openpty            tolower
- * execlp                getutxid            perror             tolower_l
- * execvp                getutxline          posix_fallocate    toupper
- * execvpe               getwc               printf             toupper_l
- * exit                  getwchar            profil             towctrans
- * __fbufsize            getwchar_unlocked   psiginfo           towlower
- * fcloseall             getwc_unlocked      psignal            towlower_l
- * fcvt                  glob                ptsname            towupper
- * fflush_unlocked       gmtime              putchar_unlocked   towupper_l
- * fgetc_unlocked        gmtime_r            putc_unlocked      tsearch
- * fgetgrent             grantpt             putenv             ttyname
- * fgetpwent             hcreate             putpwent           ttyslot
- * fgetspent             hcreate_r           putspent           twalk
- * fgets_unlocked        hdestroy            pututline          twalk_r
- * fgetwc                hdestroy_r          pututxline         tzset
- * fgetwc_unlocked       hsearch             putwc              ungetwc
- * fgetws                hsearch_r           putwchar           unsetenv
- * fgetws_unlocked       iconv               putwchar_unlocked  updwtmp
- * fnmatch               iconv_open          putwc_unlocked     utmpname
- * forkpty               inet_addr           pvalloc            va_arg
- * __fpending            inet_aton           qecvt              valloc
- * fprintf               inet_network        qfcvt              vasprintf
- * __fpurge              inet_ntoa           rand               vdprintf
- * fputc_unlocked        inet_ntop           random_r           verr
- * fputs_unlocked        inet_pton           rcmd               verrx
- * fputwc                initgroups          rcmd_af            versionsort
- * fputwc_unlocked       initstate_r         readdir            vfprintf
- * fputws                innetgr             re_comp            vfscanf
- * fputws_unlocked       iruserok            re_exec            vfwprintf
- * fread_unlocked        iruserok_af         regcomp            vprintf
- * fscanf                isalnum             regerror           vscanf
- * __fsetlocking         isalnum_l           regexec            vsnprintf
- * fts_children          isalpha             res_nclose         vsprintf
- * fts_read              isalpha_l           res_ninit          vsscanf
- * ftw                   isascii             res_nquery         vswprintf
- * fwprintf              isascii_l           res_nquerydomain   vsyslog
- * fwrite_unlocked       isblank             res_nsearch        vwarn
- * fwscanf               isblank_l           res_nsend          vwarnx
- * gamma                 iscntrl             rexec              vwprintf
- * gammaf                iscntrl_l           rexec_af           warn
- * gammal                isdigit             rpmatch            warnx
- * getaddrinfo           isdigit_l           ruserok            wcrtomb
- * getaliasbyname        isgraph             ruserok_af         wcscasecmp
- * getaliasbyname_r      isgraph_l           scandir            wcschr
- * getaliasent           islower             scanf              wcscoll
- * getaliasent_r         islower_l           secure_getenv      wcsftime
- * getchar_unlocked      isprint             seed48             wcsncasecmp
- * getcontext            isprint_l           seed48_r           wcsnrtombs
- * getc_unlocked         ispunct             setaliasent        wcsrchr
- * get_current_dir_name  ispunct_l           setcontext         wcsrtombs
- * getdate               isspace             setenv             wcstod
- * getdate_r             isspace_l           setfsent           wcstof
- * getenv                isupper             setgrent           wcstoimax
- * getfsent              isupper_l           sethostent         wcstold
- * getfsfile             iswalnum            sethostid          wcstombs
- * getfsspec             iswalnum_l          setkey             wcstoumax
- * getgrent              iswalpha            setlocale          wcswidth
- * getgrent_r            iswalpha_l          setlogmask         wcsxfrm
- * getgrgid              iswblank            setnetent          wctob
- * getgrgid_r            iswblank_l          setnetgrent        wctomb
- * getgrnam              iswcntrl            setprotoent        wctrans
- * getgrnam_r            iswcntrl_l          setpwent           wctype
- * getgrouplist          iswdigit            setrpcent          wcwidth
- * gethostbyaddr         iswdigit_l          setservent         wordexp
- * gethostbyaddr_r       iswgraph            setspent           wprintf
- * gethostbyname         iswgraph_l          setstate_r         wscanf
+ * addmntent             gethostbyname2      iswlower_l         setutent
+ * alphasort             gethostbyname2_r    iswprint           setutxent
+ * asctime               gethostbyname_r     iswprint_l         sgetspent
+ * asctime_r             gethostent          iswpunct           sgetspent_r
+ * asprintf              gethostent_r        iswpunct_l         shm_open
+ * atof                  gethostid           iswspace           shm_unlink
+ * atoi                  getlogin            iswspace_l         siginterrupt
+ * atol                  getlogin_r          iswupper           sleep
+ * atoll                 getmntent           iswupper_l         snprintf
+ * basename              getmntent_r         iswxdigit          sprintf
+ * btowc                 getnameinfo         iswxdigit_l        srand48
+ * catgets               getnetbyaddr        isxdigit           srand48_r
+ * catopen               getnetbyaddr_r      isxdigit_l         srandom_r
+ * clearenv              getnetbyname        jrand48            sscanf
+ * clearerr_unlocked     getnetbyname_r      jrand48_r          ssignal
+ * crypt                 getnetent           l64a               strcasecmp
+ * crypt_gensalt         getnetent_r         lcong48            strcasestr
+ * ctermid               getnetgrent         lcong48_r          strcoll
+ * ctime                 getnetgrent_r       lgamma             strerror
+ * ctime_r               getopt              lgammaf            strerror_l
+ * cuserid               getopt_long         lgammal            strerror_r
+ * daylight              getopt_long_only    localeconv         strfmon
+ * dbm_clearerr          getpass             localtime          strfmon_l
+ * dbm_close             getprotobyname      localtime_r        strfromd
+ * dbm_delete            getprotobyname_r    login              strfromf
+ * dbm_error             getprotobynumber    login_tty          strfroml
+ * dbm_fetch             getprotobynumber_r  logout             strftime
+ * dbm_firstkey          getprotoent         logwtmp            strftime_l
+ * dbm_nextkey           getprotoent_r       lrand48            strncasecmp
+ * dbm_open              getpw               lrand48_r          strptime
+ * dbm_store             getpwent            makecontext        strsignal
+ * dirname               getpwent_r          mallinfo           strtod
+ * dlerror               getpwnam            MB_CUR_MAX         strtof
+ * dprintf               getpwnam_r          mblen              strtoimax
+ * drand48               getpwuid            mbrlen             strtok
+ * drand48_r             getpwuid_r          mbrtowc            strtol
+ * ecvt                  getrpcbyname        mbsinit            strtold
+ * encrypt               getrpcbyname_r      mbsnrtowcs         strtoll
+ * endaliasent           getrpcbynumber      mbsrtowcs          strtoq
+ * endfsent              getrpcbynumber_r    mbstowcs           strtoul
+ * endgrent              getrpcent           mbtowc             strtoull
+ * endhostent            getrpcent_r         mcheck             strtoumax
+ * endnetent             getrpcport          mcheck_check_all   strtouq
+ * endnetgrent           getservbyname       mcheck_pedantic    strverscmp
+ * endprotoent           getservbyname_r     mktime             strxfrm
+ * endpwent              getservbyport       mprobe             swapcontext
+ * endrpcent             getservbyport_r     mrand48            swprintf
+ * endservent            getservent          mrand48_r          swscanf
+ * endspent              getservent_r        mtrace             sysconf
+ * endttyent             getspent            muntrace           syslog
+ * endusershell          getspent_r          nan                system
+ * endutent              getspnam            nanf               tdelete
+ * endutxent             getspnam_r          nanl               tempnam
+ * erand48               getttyent           newlocale          tfind
+ * erand48_r             getttynam           nftw               timegm
+ * err                   getusershell        nl_langinfo        timelocal
+ * error                 getutent            nrand48            timezone
+ * error_at_line         getutid             nrand48_r          tmpnam
+ * errx                  getutline           openpty            tolower
+ * ether_aton            getutxent           perror             tolower_l
+ * ether_ntoa            getutxid            posix_fallocate    toupper
+ * execlp                getutxline          printf             toupper_l
+ * execvp                getwc               profil             towctrans
+ * execvpe               getwchar            psiginfo           towlower
+ * exit                  getwchar_unlocked   psignal            towlower_l
+ * __fbufsize            getwc_unlocked      ptsname            towupper
+ * fcloseall             glob                putchar_unlocked   towupper_l
+ * fcvt                  gmtime              putc_unlocked      tsearch
+ * fflush_unlocked       gmtime_r            putenv             ttyname
+ * fgetc_unlocked        grantpt             putpwent           ttyslot
+ * fgetgrent             hcreate             putspent           twalk
+ * fgetpwent             hcreate_r           pututline          twalk_r
+ * fgetspent             hdestroy            pututxline         tzname
+ * fgets_unlocked        hdestroy_r          putwc              tzset
+ * fgetwc                hsearch             putwchar           ungetwc
+ * fgetwc_unlocked       hsearch_r           putwchar_unlocked  unsetenv
+ * fgetws                iconv               putwc_unlocked     updwtmp
+ * fgetws_unlocked       iconv_open          pvalloc            utmpname
+ * fnmatch               inet_addr           qecvt              va_arg
+ * forkpty               inet_aton           qfcvt              valloc
+ * __fpending            inet_network        rand               vasprintf
+ * fprintf               inet_ntoa           random_r           vdprintf
+ * __fpurge              inet_ntop           rcmd               verr
+ * fputc_unlocked        inet_pton           rcmd_af            verrx
+ * fputs_unlocked        initgroups          readdir            versionsort
+ * fputwc                initstate_r         re_comp            vfprintf
+ * fputwc_unlocked       innetgr             re_exec            vfscanf
+ * fputws                iruserok            regcomp            vfwprintf
+ * fputws_unlocked       iruserok_af         regerror           vprintf
+ * fread_unlocked        isalnum             regexec            vscanf
+ * fscanf                isalnum_l           res_nclose         vsnprintf
+ * __fsetlocking         isalpha             res_ninit          vsprintf
+ * fts_children          isalpha_l           res_nquery         vsscanf
+ * fts_read              isascii             res_nquerydomain   vswprintf
+ * ftw                   isascii_l           res_nsearch        vsyslog
+ * fwprintf              isblank             res_nsend          vwarn
+ * fwrite_unlocked       isblank_l           rexec              vwarnx
+ * fwscanf               iscntrl             rexec_af           vwprintf
+ * gamma                 iscntrl_l           rpmatch            warn
+ * gammaf                isdigit             ruserok            warnx
+ * gammal                isdigit_l           ruserok_af         wcrtomb
+ * getaddrinfo           isgraph             scandir            wcscasecmp
+ * getaliasbyname        isgraph_l           scanf              wcschr
+ * getaliasbyname_r      islower             secure_getenv      wcscoll
+ * getaliasent           islower_l           seed48             wcsftime
+ * getaliasent_r         isprint             seed48_r           wcsncasecmp
+ * getchar_unlocked      isprint_l           setaliasent        wcsnrtombs
+ * getcontext            ispunct             setcontext         wcsrchr
+ * getc_unlocked         ispunct_l           setenv             wcsrtombs
+ * get_current_dir_name  isspace             setfsent           wcstod
+ * getdate               isspace_l           setgrent           wcstof
+ * getdate_r             isupper             sethostent         wcstoimax
+ * getenv                isupper_l           sethostid          wcstold
+ * getfsent              iswalnum            setkey             wcstombs
+ * getfsfile             iswalnum_l          setlocale          wcstoumax
+ * getfsspec             iswalpha            setlogmask         wcswidth
+ * getgrent              iswalpha_l          setnetent          wcsxfrm
+ * getgrent_r            iswblank            setnetgrent        wctob
+ * getgrgid              iswblank_l          setprotoent        wctomb
+ * getgrgid_r            iswcntrl            setpwent           wctrans
+ * getgrnam              iswcntrl_l          setrpcent          wctype
+ * getgrnam_r            iswdigit            setservent         wcwidth
+ * getgrouplist          iswdigit_l          setspent           wordexp
+ * gethostbyaddr         iswgraph            setstate_r         wprintf
+ * gethostbyaddr_r       iswgraph_l          setttyent          wscanf
+ * gethostbyname         iswlower            setusershell       
  *
- * If a function doesn't appear in the above list, perl thinks it is
+ * If an access doesn't appear in the above list, perl thinks it is
  * thread-safe on all platforms.  If your experience is otherwise, add an
- * entry in the DATA portion of this file.
+ * entry in the DATA portion of regen/lock_definitions.pl.
  *
- * A few calls are considered totally unsuited for use in a multi-thread
- * environment.  No wrapper macros are generated for these, which must be
- * called only during single-thread operation:
+ * All the accesses listed above are function calls, except for these:
+ *
+ * daylight  MB_CUR_MAX  timezone  tzname  
+ *
+ * A few functions are considered totally unsuited for use in a multi-thread
+ * environment.  These must be called only during single-thread operation,
+ * hence no UNLOCK wrapper macro is generated for these, and the generated
+ * LOCK macro is designed to give a compilation error.
  *
  * endusershell  getaliasbyname  getusershell  rcmd_af   setusershell
  * ether_aton    getaliasent     mtrace        re_comp   ttyslot
@@ -169,42 +176,55 @@
  * getutent  getutline  getutxid    mallinfo  valloc  
  * getutid   getutxent  getutxline  pvalloc   
  *
- * Some functions use and/or modify a global state, such as a database.
+ * Some libc functions use and/or modify a global state, such as a database.
  * The libc functions presume that there is only one thread at a time
  * operating on that database.  Unpredictable results occur if more than one
  * does, even if the database is not changed.  For example, typically there is
- * a global iterator for the data base maintained by libc, so that each new
- * read from any thread advances it, meaning that no thread will see all the
- * entries.  The only way to make these thread-safe is to have an exclusive
- * lock on a mutex from the open call to the close.  This is beyond the
- * current scope of this header.  You are advised to not use such databases
- * from more than one thread at a time.  The lock macros here only are
- * designed to make the individual function calls thread-safe just for the
- * duration of the call.  Comments at each definition tell what other
+ * a global iterator for such a data base and that iterator is maintained by
+ * libc, so that each new read from any thread advances it, meaning that no
+ * thread will see all the entries.  The only way to make these thread-safe is
+ * to have an exclusive lock on a mutex from the open call to the close.  This
+ * is beyond the current scope of this header.  You are advised to not use
+ * such databases from more than one thread at a time.  The LOCK macros here
+ * only are designed to make the individual function calls thread-safe just
+ * for the duration of the call.  Comments at each definition tell what other
  * functions have races with that function.  Typically the functions that fall
  * into this class have races with other functions whose names begin with
- * "end", such as "endgrent()".  Other examples include pseudo-random number
- * generators.  Some libc implementations of 'rand()', for example, may share
- * the data across threads; and others may have per-thread data.  The shared
- * ones will have unreproducible results, as the threads vary in their
- * timings and interactions.  This may be what you want; or it may not be.
- * (This particular function may be removed from the POSIX Standard because of
- * these issues.)
+ * "end", such as "endgrent()".
  *
- * Other functions that output to a stream also are considered thread-unsafe
- * without locking.  but the typical consequences are just that the data is
- * output in unpredictable ways, which may be totally acceptable.  However, it
- * is beyond the scope of these macros to make sure that formatted output uses
- * a non-dot radix decimal point.  Use the WITH_LC_NUMERIC_SET_TO_NEEDED()
- * macro #defined in perl.h to accomplish this.
+ * Other examples of functions that use a global state include pseudo-random
+ * number generators.  Some libc implementations of 'rand()', for example, may
+ * share the data across threads; and others may have per-thread data.  The
+ * shared ones will have unreproducible results, as the threads vary in their
+ * timings and interactions.  This may be what you want; or it may not be.
+ * (This particular function is a candidate to be removed from the POSIX
+ * Standard because of these issues.)
+ *
+ * When one thread does a chdir(2), it affects the whole process, and any libc
+ * call that is expecting a stable working directory will be adversely
+ * affected.  The man pages only list one such call, the obsolete nftw().
+ * But there may be other issues lurking.
+ *
+ * Functions that output to a stream also are considered thread-unsafe when
+ * locking is not done.  But the typical consequences are just that the data
+ * is output in unpredictable ways, which may be totally acceptable.  However,
+ * it is beyond the scope of these macros to make sure that formatted output
+ * uses a non-dot radix decimal point.  Use the
+ * WITH_LC_NUMERIC_SET_TO_NEEDED() macro documented in perlapi to accomplish
+ * this.
  *
  * The rest of the functions, when wrapped with their respective LOCK and
  * UNLOCK macros, should be thread-safe.
  *
  * However, some of these are not thread-safe if called with arguments that
- * don't comply with certain (easily-met) restrictions.  Those are commented
- * where their respective macros are #defined.  The macros assume that the
- * function is called with the appropriate restrictions.
+ * don't comply with certain (easily-met) restrictions.  These are:
+ *
+ * ctermid  error_at_line  mbrtowc     mbsrtowcs  va_arg   wcsnrtombs  
+ * cuserid  mbrlen         mbsnrtowcs  tmpnam     wcrtomb  wcsrtombs   
+ *
+ * The details on each restriction are documented below where their respective
+ * macros are #defined.  The macros assume that the function is called with
+ * the appropriate restrictions.
  *
  * The macros here do not help in coping with asynchronous signals.  For
  * these, you need to see the vendor man pages.  The functions here known to
@@ -218,20 +238,19 @@
  * has signal issues.
  *
  * In theory, you should wrap every instance of every function listed here
- * with its corresponding lock macros, except as noted above.  The macros here
- * all should expand to no-ops when run from an unthreaded perl.  Many also
- * expand to no-ops on various other platforms and Configurations.  They exist
- * so you you don't have to worry about this.  Some definitions are no-ops in
- * all current cases, but you should wrap their functions anyway, as future
- * work likely will yield Configurations where they aren't just no-ops.
+ * with its corresponding LOCK/UNLOCK macros, except as noted above.  The
+ * macros here all should expand to no-ops when run from an unthreaded perl.
+ * Many also expand to no-ops on various other platforms and Configurations.
+ * They exist so you you don't have to worry about this.  Some definitions are
+ * no-ops in all current cases, but you should wrap their functions anyway, as
+ * future work likely will yield Configurations where they aren't just no-ops.
  *
  * You may override any definitions here simply by #defining your own before
- * #including this file.
+ * #including this file (which likely means before #including perl.h).
  *
- * The macros are designed to not result in deadlock, but best practice is to
- * call the LOCK macro; call the function and copy the result to a per-thread
- * place if that result points to a buffer internal to libc; then UNLOCK it
- * immediately.  Then act on the result.
+ * Best practice is to call the LOCK macro; call the function and copy the
+ * result to a per-thread place if that result points to a buffer internal to
+ * libc; then UNLOCK it immediately.  After that, you can act on the result.
  *
  * The macros here are generated from an internal DATA section in
  * regen/lock_definitions.pl, populated from information derived from the
@@ -240,6 +259,26 @@
  * typically more detailed than the Standard, and other vendors, who may also
  * have the same restrictions, but just don't document them.) The data can
  * easily be adjusted as necessary.
+ *
+ * The macros generated here expand to other macro calls that are expected to
+ * be #defined in perl.h, depending on the platform and Configuration.  Many
+ * of the thread vulnerabilities involve the program's environment and locale,
+ * so perl has separate mutexes for each of those two types of access.  There
+ * are a few others, all rare or obsolete.   There are also many races, where
+ * certain functions concurrently executing in different threads can interfere
+ * with each other unpredictably.  This header file currently lumps all races
+ * and non-environment/locale vulnerabilities into a third, generic, mutex.
+ * So the macro names are various combinations of the three mutexes, and
+ * whether the lock needs to be exclusive (suffix "x" in the mutex name) or
+ * non-exclusive (suffix "r" for read-only).  GEN means the generic mutex; ENV
+ * the environment one; and LC the locale one.
+ *
+ * The lumping into the single generic mutex is due to the expectation that
+ * such calls are infrequent enough that having a single mutex for all won't
+ * noticeably affect performance, and that the more mutexes you have, the more
+ * likely deadlock can occur.  Individual cases could be separated into
+ * separate mutexes if necessary.  perl.h takes further steps in the expansion
+ * of these macros to avoid deadlock altogether.
  */
 #define LC_ALLb_  LC_INDEX_TO_BIT_(LC_ALL_INDEX_)
 
@@ -289,8 +328,8 @@
     *             fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
     *             __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
     *             getwc_unlocked(), putc_unlocked(), or putwc_unlocked(). */
-#  define ADDMNTENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define ADDMNTENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define ADDMNTENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define ADDMNTENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef ALPHASORT_LOCK
@@ -300,16 +339,16 @@
 
 #ifndef ASCTIME_LOCK
 
-   /* asctime() Obsolete, use Perl_sv_strftime_tm() instead
+   /* asctime() Obsolete; use Perl_sv_strftime_tm() instead
     * asctime() has races with other threads concurrently executing either
     *           itself or ctime. */
-#  define ASCTIME_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define ASCTIME_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define ASCTIME_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define ASCTIME_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef ASCTIME_R_LOCK
 
-   /* asctime_r() Obsolete, use Perl_sv_strftime_tm() instead */
+   /* asctime_r() Obsolete; use Perl_sv_strftime_tm() instead */
 #  define ASCTIME_R_LOCK    LCr_LOCK_(  LC_ALLb_)
 #  define ASCTIME_R_UNLOCK  LCr_UNLOCK_(LC_ALLb_)
 #endif
@@ -341,8 +380,8 @@
 
 #ifndef BASENAME_LOCK
 #  ifndef __GLIBC__
-#    define BASENAME_LOCK    GENw_LOCK_
-#    define BASENAME_UNLOCK  GENw_UNLOCK_
+#    define BASENAME_LOCK    GENx_LOCK_
+#    define BASENAME_UNLOCK  GENx_UNLOCK_
 #  else
 #    define BASENAME_LOCK    NOOP
 #    define BASENAME_UNLOCK  NOOP
@@ -356,8 +395,8 @@
 
 #ifndef CATGETS_LOCK
 #  ifndef __GLIBC__
-#    define CATGETS_LOCK    GENw_LOCK_
-#    define CATGETS_UNLOCK  GENw_UNLOCK_
+#    define CATGETS_LOCK    GENx_LOCK_
+#    define CATGETS_UNLOCK  GENx_UNLOCK_
 #  else
 #    define CATGETS_LOCK    NOOP
 #    define CATGETS_UNLOCK  NOOP
@@ -370,8 +409,8 @@
 #endif
 
 #ifndef CLEARENV_LOCK
-#  define CLEARENV_LOCK    ENVw_LOCK_
-#  define CLEARENV_UNLOCK  ENVw_UNLOCK_
+#  define CLEARENV_LOCK    ENVx_LOCK_
+#  define CLEARENV_UNLOCK  ENVx_UNLOCK_
 #endif
 
 #ifndef CLEARERR_UNLOCKED_LOCK
@@ -390,21 +429,21 @@
     *                     fwrite_unlocked(), getc_unlocked(),
     *                     getwc_unlocked(), putc_unlocked(), or
     *                     putwc_unlocked(). */
-#  define CLEARERR_UNLOCKED_LOCK    GENw_LOCK_
-#  define CLEARERR_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define CLEARERR_UNLOCKED_LOCK    GENx_LOCK_
+#  define CLEARERR_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef CRYPT_LOCK
 
    /* crypt() has races with other threads concurrently executing any of:
     *         itself, encrypt(), or setkey(). */
-#  define CRYPT_LOCK    GENw_LOCK_
-#  define CRYPT_UNLOCK  GENw_UNLOCK_
+#  define CRYPT_LOCK    GENx_LOCK_
+#  define CRYPT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef CRYPT_GENSALT_LOCK
-#  define CRYPT_GENSALT_LOCK    GENw_LOCK_
-#  define CRYPT_GENSALT_UNLOCK  GENw_UNLOCK_
+#  define CRYPT_GENSALT_LOCK    GENx_LOCK_
+#  define CRYPT_GENSALT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef CTERMID_LOCK
@@ -421,22 +460,23 @@
 
 #ifndef CTIME_LOCK
 
-   /* ctime() Obsolete, use Perl_sv_strftime_ints() instead
+   /* ctime() Obsolete; use Perl_sv_strftime_ints() instead
     * ctime() has races with other threads concurrently executing any of:
-    *         itself, asctime(), ctime_r(), gmtime(), localtime(),
-    *         localtime_r(), mktime(), strftime(), or tzset(). */
-#  define CTIME_LOCK    GENw_ENVr_LCr_LOCK_(  LC_TIMEb_)
-#  define CTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_TIMEb_)
+    *         itself, asctime(), ctime_r(), daylight(), gmtime(), localtime(),
+    *         localtime_r(), mktime(), strftime(), timezone(), tzname(), or
+    *         tzset(). */
+#  define CTIME_LOCK    GENx_ENVr_LCr_LOCK_(  LC_TIMEb_)
+#  define CTIME_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_TIMEb_)
 #endif
 
 #ifndef CTIME_R_LOCK
 
-   /* ctime_r() Obsolete, use Perl_sv_strftime_ints() instead
+   /* ctime_r() Obsolete; use Perl_sv_strftime_ints() instead
     * ctime_r() has races with other threads concurrently executing any of:
-    *           itself, ctime(), localtime(), localtime_r(), mktime(),
-    *           strftime(), or tzset(). */
-#  define CTIME_R_LOCK    GENw_ENVr_LCr_LOCK_(  LC_TIMEb_)
-#  define CTIME_R_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_TIMEb_)
+    *           itself, ctime(), daylight(), localtime(), localtime_r(),
+    *           mktime(), strftime(), timezone(), tzname(), or tzset(). */
+#  define CTIME_R_LOCK    GENx_ENVr_LCr_LOCK_(  LC_TIMEb_)
+#  define CTIME_R_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_TIMEb_)
 #endif
 
 #ifndef CUSERID_LOCK
@@ -446,49 +486,58 @@
 #  define CUSERID_UNLOCK  LCr_UNLOCK_(LC_ALLb_)
 #endif
 
+#ifndef DAYLIGHT_LOCK
+
+   /* daylight has races with other threads concurrently executing any of:
+    *          itself, ctime(), ctime_r(), localtime(), localtime_r(),
+    *          mktime(), strftime(), timezone(), tzname(), or tzset(). */
+#  define DAYLIGHT_LOCK    GENx_LOCK_
+#  define DAYLIGHT_UNLOCK  GENx_UNLOCK_
+#endif
+
 #ifndef DBM_CLEARERR_LOCK
-#  define DBM_CLEARERR_LOCK    GENw_LOCK_
-#  define DBM_CLEARERR_UNLOCK  GENw_UNLOCK_
+#  define DBM_CLEARERR_LOCK    GENx_LOCK_
+#  define DBM_CLEARERR_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DBM_CLOSE_LOCK
-#  define DBM_CLOSE_LOCK    GENw_LOCK_
-#  define DBM_CLOSE_UNLOCK  GENw_UNLOCK_
+#  define DBM_CLOSE_LOCK    GENx_LOCK_
+#  define DBM_CLOSE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DBM_DELETE_LOCK
-#  define DBM_DELETE_LOCK    GENw_LOCK_
-#  define DBM_DELETE_UNLOCK  GENw_UNLOCK_
+#  define DBM_DELETE_LOCK    GENx_LOCK_
+#  define DBM_DELETE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DBM_ERROR_LOCK
-#  define DBM_ERROR_LOCK    GENw_LOCK_
-#  define DBM_ERROR_UNLOCK  GENw_UNLOCK_
+#  define DBM_ERROR_LOCK    GENx_LOCK_
+#  define DBM_ERROR_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DBM_FETCH_LOCK
-#  define DBM_FETCH_LOCK    GENw_LOCK_
-#  define DBM_FETCH_UNLOCK  GENw_UNLOCK_
+#  define DBM_FETCH_LOCK    GENx_LOCK_
+#  define DBM_FETCH_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DBM_FIRSTKEY_LOCK
-#  define DBM_FIRSTKEY_LOCK    GENw_LOCK_
-#  define DBM_FIRSTKEY_UNLOCK  GENw_UNLOCK_
+#  define DBM_FIRSTKEY_LOCK    GENx_LOCK_
+#  define DBM_FIRSTKEY_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DBM_NEXTKEY_LOCK
-#  define DBM_NEXTKEY_LOCK    GENw_LOCK_
-#  define DBM_NEXTKEY_UNLOCK  GENw_UNLOCK_
+#  define DBM_NEXTKEY_LOCK    GENx_LOCK_
+#  define DBM_NEXTKEY_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DBM_OPEN_LOCK
-#  define DBM_OPEN_LOCK    GENw_LOCK_
-#  define DBM_OPEN_UNLOCK  GENw_UNLOCK_
+#  define DBM_OPEN_LOCK    GENx_LOCK_
+#  define DBM_OPEN_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DBM_STORE_LOCK
-#  define DBM_STORE_LOCK    GENw_LOCK_
-#  define DBM_STORE_UNLOCK  GENw_UNLOCK_
+#  define DBM_STORE_LOCK    GENx_LOCK_
+#  define DBM_STORE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DIRNAME_LOCK
@@ -503,8 +552,8 @@
 
 #ifndef DLERROR_LOCK
 #  ifndef __GLIBC__
-#    define DLERROR_LOCK    GENw_LOCK_
-#    define DLERROR_UNLOCK  GENw_UNLOCK_
+#    define DLERROR_LOCK    GENx_LOCK_
+#    define DLERROR_UNLOCK  GENx_UNLOCK_
 #  else
 #    define DLERROR_LOCK    NOOP
 #    define DLERROR_UNLOCK  NOOP
@@ -521,8 +570,8 @@
    /* drand48() has races with other threads concurrently executing any of:
     *           itself, erand48(), jrand48(), lcong48(), lrand48(), mrand48(),
     *           nrand48(), seed48(), or srand48(). */
-#  define DRAND48_LOCK    GENw_LOCK_
-#  define DRAND48_UNLOCK  GENw_UNLOCK_
+#  define DRAND48_LOCK    GENx_LOCK_
+#  define DRAND48_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef DRAND48_R_LOCK
@@ -530,23 +579,23 @@
    /* drand48_r() has races with other threads concurrently executing any of:
     *             itself, erand48_r(), jrand48_r(), lcong48_r(), lrand48_r(),
     *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
-#  define DRAND48_R_LOCK    GENw_LOCK_
-#  define DRAND48_R_UNLOCK  GENw_UNLOCK_
+#  define DRAND48_R_LOCK    GENx_LOCK_
+#  define DRAND48_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ECVT_LOCK
 
-   /* ecvt() Obsolete, use snprintf() instead */
-#  define ECVT_LOCK    GENw_LOCK_
-#  define ECVT_UNLOCK  GENw_UNLOCK_
+   /* ecvt() Obsolete; use snprintf() instead */
+#  define ECVT_LOCK    GENx_LOCK_
+#  define ECVT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ENCRYPT_LOCK
 
    /* encrypt() has races with other threads concurrently executing any of:
     *           itself, crypt(), or setkey(). */
-#  define ENCRYPT_LOCK    GENw_LOCK_
-#  define ENCRYPT_UNLOCK  GENw_UNLOCK_
+#  define ENCRYPT_LOCK    GENx_LOCK_
+#  define ENCRYPT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ENDALIASENT_LOCK
@@ -559,32 +608,32 @@
    /* endfsent() has races with other threads concurrently executing any of:
     *            itself, getfsent(), getfsfile(), getfsspec(), or setfsent().
     */
-#  define ENDFSENT_LOCK    GENw_LOCK_
-#  define ENDFSENT_UNLOCK  GENw_UNLOCK_
+#  define ENDFSENT_LOCK    GENx_LOCK_
+#  define ENDFSENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ENDGRENT_LOCK
 
    /* endgrent() has races with other threads concurrently executing any of:
     *            itself, getgrent(), getgrent_r(), or setgrent(). */
-#  define ENDGRENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define ENDGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define ENDGRENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define ENDGRENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef ENDHOSTENT_LOCK
 
    /* endhostent() has races with other threads concurrently executing any of:
     *              itself, gethostent(), gethostent_r(), or sethostent(). */
-#  define ENDHOSTENT_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define ENDHOSTENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define ENDHOSTENT_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define ENDHOSTENT_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef ENDNETENT_LOCK
 
    /* endnetent() has races with other threads concurrently executing any of:
     *             itself, getnetent(), or setnetent(). */
-#  define ENDNETENT_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define ENDNETENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define ENDNETENT_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define ENDNETENT_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef ENDNETGRENT_LOCK
@@ -592,24 +641,24 @@
    /* endnetgrent() has races with other threads concurrently executing any
     *               of: itself, getnetgrent(), getnetgrent_r(), innetgr(), or
     *               setnetgrent(). */
-#  define ENDNETGRENT_LOCK    GENw_LOCK_
-#  define ENDNETGRENT_UNLOCK  GENw_UNLOCK_
+#  define ENDNETGRENT_LOCK    GENx_LOCK_
+#  define ENDNETGRENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ENDPROTOENT_LOCK
 
    /* endprotoent() has races with other threads concurrently executing any
     *               of: itself, getprotoent(), or setprotoent(). */
-#  define ENDPROTOENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define ENDPROTOENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define ENDPROTOENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define ENDPROTOENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef ENDPWENT_LOCK
 
    /* endpwent() has races with other threads concurrently executing any of:
     *            itself, getpwent(), getpwent_r(), or setpwent(). */
-#  define ENDPWENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define ENDPWENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define ENDPWENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define ENDPWENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef ENDRPCENT_LOCK
@@ -621,24 +670,24 @@
 
    /* endservent() has races with other threads concurrently executing any of:
     *              itself, getservent(), or setservent(). */
-#  define ENDSERVENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define ENDSERVENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define ENDSERVENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define ENDSERVENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef ENDSPENT_LOCK
 
    /* endspent() has races with other threads concurrently executing any of:
     *            itself, getspent(), getspent_r(), or setspent(). */
-#  define ENDSPENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define ENDSPENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define ENDSPENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define ENDSPENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef ENDTTYENT_LOCK
 
    /* endttyent() has races with other threads concurrently executing any of:
     *             itself, getttyent(), getttynam(), or setttyent(). */
-#  define ENDTTYENT_LOCK    GENw_LOCK_
-#  define ENDTTYENT_UNLOCK  GENw_UNLOCK_
+#  define ENDTTYENT_LOCK    GENx_LOCK_
+#  define ENDTTYENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ENDUSERSHELL_LOCK
@@ -655,8 +704,8 @@
     *            getutxline(), glob(), login(), logout(), pututline(),
     *            pututxline(), setutent(), setutxent(), utmpname(), or
     *            wordexp(). */
-#  define ENDUTENT_LOCK    GENw_LOCK_
-#  define ENDUTENT_UNLOCK  GENw_UNLOCK_
+#  define ENDUTENT_LOCK    GENx_LOCK_
+#  define ENDUTENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ENDUTXENT_LOCK
@@ -667,8 +716,8 @@
     *             getutxline(), glob(), login(), logout(), pututline(),
     *             pututxline(), setutent(), setutxent(), utmpname(), or
     *             wordexp(). */
-#  define ENDUTXENT_LOCK    GENw_LOCK_
-#  define ENDUTXENT_UNLOCK  GENw_UNLOCK_
+#  define ENDUTXENT_LOCK    GENx_LOCK_
+#  define ENDUTXENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ERAND48_LOCK
@@ -676,8 +725,8 @@
    /* erand48() has races with other threads concurrently executing any of:
     *           itself, drand48(), jrand48(), lcong48(), lrand48(), mrand48(),
     *           nrand48(), seed48(), or srand48(). */
-#  define ERAND48_LOCK    GENw_LOCK_
-#  define ERAND48_UNLOCK  GENw_UNLOCK_
+#  define ERAND48_LOCK    GENx_LOCK_
+#  define ERAND48_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ERAND48_R_LOCK
@@ -685,8 +734,8 @@
    /* erand48_r() has races with other threads concurrently executing any of:
     *             itself, drand48_r(), jrand48_r(), lcong48_r(), lrand48_r(),
     *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
-#  define ERAND48_R_LOCK    GENw_LOCK_
-#  define ERAND48_R_UNLOCK  GENw_UNLOCK_
+#  define ERAND48_R_LOCK    GENx_LOCK_
+#  define ERAND48_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ERR_LOCK
@@ -737,8 +786,8 @@
 #endif
 
 #ifndef EXIT_LOCK
-#  define EXIT_LOCK    GENw_LOCK_
-#  define EXIT_UNLOCK  GENw_UNLOCK_
+#  define EXIT_LOCK    GENx_LOCK_
+#  define EXIT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef __FBUFSIZE_LOCK
@@ -751,20 +800,20 @@
     *              fputwc_unlocked(), fputws_unlocked(), fread_unlocked(),
     *              __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
     *              getwc_unlocked(), putc_unlocked(), or putwc_unlocked(). */
-#  define __FBUFSIZE_LOCK    GENw_LOCK_
-#  define __FBUFSIZE_UNLOCK  GENw_UNLOCK_
+#  define __FBUFSIZE_LOCK    GENx_LOCK_
+#  define __FBUFSIZE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FCLOSEALL_LOCK
-#  define FCLOSEALL_LOCK    GENw_LOCK_
-#  define FCLOSEALL_UNLOCK  GENw_UNLOCK_
+#  define FCLOSEALL_LOCK    GENx_LOCK_
+#  define FCLOSEALL_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FCVT_LOCK
 
-   /* fcvt() Obsolete, use snprintf() instead */
-#  define FCVT_LOCK    GENw_LOCK_
-#  define FCVT_UNLOCK  GENw_UNLOCK_
+   /* fcvt() Obsolete; use snprintf() instead */
+#  define FCVT_LOCK    GENx_LOCK_
+#  define FCVT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FFLUSH_UNLOCKED_LOCK
@@ -781,8 +830,8 @@
     *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
     *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
     *                   putwc_unlocked(). */
-#  define FFLUSH_UNLOCKED_LOCK    GENw_LOCK_
-#  define FFLUSH_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FFLUSH_UNLOCKED_LOCK    GENx_LOCK_
+#  define FFLUSH_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FGETC_UNLOCKED_LOCK
@@ -799,23 +848,23 @@
     *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
     *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
     */
-#  define FGETC_UNLOCKED_LOCK    GENw_LOCK_
-#  define FGETC_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FGETC_UNLOCKED_LOCK    GENx_LOCK_
+#  define FGETC_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FGETGRENT_LOCK
-#  define FGETGRENT_LOCK    GENw_LOCK_
-#  define FGETGRENT_UNLOCK  GENw_UNLOCK_
+#  define FGETGRENT_LOCK    GENx_LOCK_
+#  define FGETGRENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FGETPWENT_LOCK
-#  define FGETPWENT_LOCK    GENw_LOCK_
-#  define FGETPWENT_UNLOCK  GENw_UNLOCK_
+#  define FGETPWENT_LOCK    GENx_LOCK_
+#  define FGETPWENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FGETSPENT_LOCK
-#  define FGETSPENT_LOCK    GENw_LOCK_
-#  define FGETSPENT_UNLOCK  GENw_UNLOCK_
+#  define FGETSPENT_LOCK    GENx_LOCK_
+#  define FGETSPENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FGETS_UNLOCKED_LOCK
@@ -832,8 +881,8 @@
     *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
     *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
     */
-#  define FGETS_UNLOCKED_LOCK    GENw_LOCK_
-#  define FGETS_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FGETS_UNLOCKED_LOCK    GENx_LOCK_
+#  define FGETS_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FGETWC_LOCK
@@ -855,8 +904,8 @@
     *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
     *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
     *                   putwc_unlocked(). */
-#  define FGETWC_UNLOCKED_LOCK    GENw_LOCK_
-#  define FGETWC_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FGETWC_UNLOCKED_LOCK    GENx_LOCK_
+#  define FGETWC_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FGETWS_LOCK
@@ -878,8 +927,8 @@
     *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
     *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
     *                   putwc_unlocked(). */
-#  define FGETWS_UNLOCKED_LOCK    GENw_LOCK_
-#  define FGETWS_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FGETWS_UNLOCKED_LOCK    GENx_LOCK_
+#  define FGETWS_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FNMATCH_LOCK
@@ -902,8 +951,8 @@
     *              fputws_unlocked(), fread_unlocked(), __fsetlocking(),
     *              fwrite_unlocked(), getc_unlocked(), getwc_unlocked(),
     *              putc_unlocked(), or putwc_unlocked(). */
-#  define __FPENDING_LOCK    GENw_LOCK_
-#  define __FPENDING_UNLOCK  GENw_UNLOCK_
+#  define __FPENDING_LOCK    GENx_LOCK_
+#  define __FPENDING_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FPRINTF_LOCK
@@ -922,8 +971,8 @@
     *            fputws_unlocked(), fread_unlocked(), __fsetlocking(),
     *            fwrite_unlocked(), getc_unlocked(), getwc_unlocked(),
     *            putc_unlocked(), or putwc_unlocked(). */
-#  define __FPURGE_LOCK    GENw_LOCK_
-#  define __FPURGE_UNLOCK  GENw_UNLOCK_
+#  define __FPURGE_LOCK    GENx_LOCK_
+#  define __FPURGE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FPUTC_UNLOCKED_LOCK
@@ -940,8 +989,8 @@
     *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
     *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
     */
-#  define FPUTC_UNLOCKED_LOCK    GENw_LOCK_
-#  define FPUTC_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FPUTC_UNLOCKED_LOCK    GENx_LOCK_
+#  define FPUTC_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FPUTS_UNLOCKED_LOCK
@@ -958,8 +1007,8 @@
     *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
     *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
     */
-#  define FPUTS_UNLOCKED_LOCK    GENw_LOCK_
-#  define FPUTS_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FPUTS_UNLOCKED_LOCK    GENx_LOCK_
+#  define FPUTS_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FPUTWC_LOCK
@@ -981,8 +1030,8 @@
     *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
     *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
     *                   putwc_unlocked(). */
-#  define FPUTWC_UNLOCKED_LOCK    GENw_LOCK_
-#  define FPUTWC_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FPUTWC_UNLOCKED_LOCK    GENx_LOCK_
+#  define FPUTWC_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FPUTWS_LOCK
@@ -1004,8 +1053,8 @@
     *                   fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
     *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
     *                   putwc_unlocked(). */
-#  define FPUTWS_UNLOCKED_LOCK    GENw_LOCK_
-#  define FPUTWS_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FPUTWS_UNLOCKED_LOCK    GENx_LOCK_
+#  define FPUTWS_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FREAD_UNLOCKED_LOCK
@@ -1022,8 +1071,8 @@
     *                  __fsetlocking(), fwrite_unlocked(), getc_unlocked(),
     *                  getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
     */
-#  define FREAD_UNLOCKED_LOCK    GENw_LOCK_
-#  define FREAD_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FREAD_UNLOCKED_LOCK    GENx_LOCK_
+#  define FREAD_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FSCANF_LOCK
@@ -1042,8 +1091,8 @@
     *                 fread_unlocked(), fwrite_unlocked(), getc_unlocked(),
     *                 getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
     */
-#  define __FSETLOCKING_LOCK    GENw_LOCK_
-#  define __FSETLOCKING_UNLOCK  GENw_UNLOCK_
+#  define __FSETLOCKING_LOCK    GENx_LOCK_
+#  define __FSETLOCKING_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FTS_CHILDREN_LOCK
@@ -1059,8 +1108,8 @@
 #ifndef FTW_LOCK
 
    /* ftw() Obsolete */
-#  define FTW_LOCK    GENw_LOCK_
-#  define FTW_UNLOCK  GENw_UNLOCK_
+#  define FTW_LOCK    GENx_LOCK_
+#  define FTW_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FWPRINTF_LOCK
@@ -1082,8 +1131,8 @@
     *                   fputws_unlocked(), fread_unlocked(), __fsetlocking(),
     *                   getc_unlocked(), getwc_unlocked(), putc_unlocked(), or
     *                   putwc_unlocked(). */
-#  define FWRITE_UNLOCKED_LOCK    GENw_LOCK_
-#  define FWRITE_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define FWRITE_UNLOCKED_LOCK    GENx_LOCK_
+#  define FWRITE_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef FWSCANF_LOCK
@@ -1095,24 +1144,24 @@
 
    /* gamma() has races with other threads concurrently executing any of:
     *         itself, gammaf(), gammal(), lgamma(), lgammaf(), or lgammal(). */
-#  define GAMMA_LOCK    GENw_LOCK_
-#  define GAMMA_UNLOCK  GENw_UNLOCK_
+#  define GAMMA_LOCK    GENx_LOCK_
+#  define GAMMA_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GAMMAF_LOCK
 
    /* gammaf() has races with other threads concurrently executing any of:
     *          itself, gamma(), gammal(), lgamma(), lgammaf(), or lgammal(). */
-#  define GAMMAF_LOCK    GENw_LOCK_
-#  define GAMMAF_UNLOCK  GENw_UNLOCK_
+#  define GAMMAF_LOCK    GENx_LOCK_
+#  define GAMMAF_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GAMMAL_LOCK
 
    /* gammal() has races with other threads concurrently executing any of:
     *          itself, gamma(), gammaf(), lgamma(), lgammaf(), or lgammal(). */
-#  define GAMMAL_LOCK    GENw_LOCK_
-#  define GAMMAL_UNLOCK  GENw_UNLOCK_
+#  define GAMMAL_LOCK    GENx_LOCK_
+#  define GAMMAL_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETADDRINFO_LOCK
@@ -1146,16 +1195,16 @@
     *                    locked stdin
     * getchar_unlocked() has races with other threads concurrently executing
     *                    either itself or getwchar_unlocked. */
-#  define GETCHAR_UNLOCKED_LOCK    GENw_LOCK_
-#  define GETCHAR_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define GETCHAR_UNLOCKED_LOCK    GENx_LOCK_
+#  define GETCHAR_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETCONTEXT_LOCK
 
    /* getcontext() has races with other threads concurrently executing any of:
     *              itself, makecontext(), setcontext(), or swapcontext(). */
-#  define GETCONTEXT_LOCK    GENw_LOCK_
-#  define GETCONTEXT_UNLOCK  GENw_UNLOCK_
+#  define GETCONTEXT_LOCK    GENx_LOCK_
+#  define GETCONTEXT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETC_UNLOCKED_LOCK
@@ -1171,8 +1220,8 @@
     *                 fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
     *                 getwc_unlocked(), putc_unlocked(), or putwc_unlocked().
     */
-#  define GETC_UNLOCKED_LOCK    GENw_LOCK_
-#  define GETC_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define GETC_UNLOCKED_LOCK    GENx_LOCK_
+#  define GETC_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GET_CURRENT_DIR_NAME_LOCK
@@ -1181,8 +1230,8 @@
 #endif
 
 #ifndef GETDATE_LOCK
-#  define GETDATE_LOCK    GENw_ENVr_LCr_LOCK_(  LC_TIMEb_)
-#  define GETDATE_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_TIMEb_)
+#  define GETDATE_LOCK    GENx_ENVr_LCr_LOCK_(  LC_TIMEb_)
+#  define GETDATE_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_TIMEb_)
 #endif
 
 #ifndef GETDATE_R_LOCK
@@ -1195,8 +1244,8 @@
 #    define GETENV_LOCK    ENVr_LOCK_
 #    define GETENV_UNLOCK  ENVr_UNLOCK_
 #  else
-#    define GETENV_LOCK    GENw_ENVr_LOCK_
-#    define GETENV_UNLOCK  GENw_ENVr_UNLOCK_
+#    define GETENV_LOCK    GENx_ENVr_LOCK_
+#    define GETENV_UNLOCK  GENx_ENVr_UNLOCK_
 #  endif
 #endif
 
@@ -1205,8 +1254,8 @@
    /* getfsent() has races with other threads concurrently executing any of:
     *            itself, endfsent(), getfsfile(), getfsspec(), or setfsent().
     */
-#  define GETFSENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETFSENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETFSENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETFSENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETFSFILE_LOCK
@@ -1214,8 +1263,8 @@
    /* getfsfile() has races with other threads concurrently executing any of:
     *             itself, endfsent(), getfsent(), getfsspec(), or setfsent().
     */
-#  define GETFSFILE_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETFSFILE_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETFSFILE_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETFSFILE_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETFSSPEC_LOCK
@@ -1223,29 +1272,29 @@
    /* getfsspec() has races with other threads concurrently executing any of:
     *             itself, endfsent(), getfsent(), getfsfile(), or setfsent().
     */
-#  define GETFSSPEC_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETFSSPEC_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETFSSPEC_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETFSSPEC_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETGRENT_LOCK
 
    /* getgrent() has races with other threads concurrently executing any of:
     *            itself, endgrent(), getgrent_r(), or setgrent(). */
-#  define GETGRENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETGRENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETGRENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETGRENT_R_LOCK
 
    /* getgrent_r() has races with other threads concurrently executing any of:
     *              itself, endgrent(), getgrent(), or setgrent(). */
-#  define GETGRENT_R_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETGRENT_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETGRENT_R_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETGRENT_R_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETGRGID_LOCK
-#  define GETGRGID_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETGRGID_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETGRGID_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETGRGID_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETGRGID_R_LOCK
@@ -1254,8 +1303,8 @@
 #endif
 
 #ifndef GETGRNAM_LOCK
-#  define GETGRNAM_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETGRNAM_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETGRNAM_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETGRNAM_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETGRNAM_R_LOCK
@@ -1270,10 +1319,10 @@
 
 #ifndef GETHOSTBYADDR_LOCK
 
-   /* gethostbyaddr() Obsolete; use getaddrinfo(); return needs a deep copy
-    *                 for safety instead */
-#  define GETHOSTBYADDR_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define GETHOSTBYADDR_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+   /* gethostbyaddr() Obsolete; use getaddrinfo() instead
+    * gethostbyaddr() return needs a deep copy for safety */
+#  define GETHOSTBYADDR_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define GETHOSTBYADDR_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETHOSTBYADDR_R_LOCK
@@ -1283,15 +1332,15 @@
 
 #ifndef GETHOSTBYNAME_LOCK
 
-   /* gethostbyname() Obsolete; use getnameinfo() instead; return needs a deep
-    *                 copy for safety */
-#  define GETHOSTBYNAME_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define GETHOSTBYNAME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+   /* gethostbyname() Obsolete; use getnameinfo() instead
+    * gethostbyname() return needs a deep copy for safety */
+#  define GETHOSTBYNAME_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define GETHOSTBYNAME_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETHOSTBYNAME2_LOCK
-#  define GETHOSTBYNAME2_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define GETHOSTBYNAME2_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define GETHOSTBYNAME2_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define GETHOSTBYNAME2_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETHOSTBYNAME2_R_LOCK
@@ -1308,8 +1357,8 @@
 
    /* gethostent() has races with other threads concurrently executing any of:
     *              itself, endhostent(), gethostent_r(), or sethostent(). */
-#  define GETHOSTENT_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define GETHOSTENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define GETHOSTENT_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define GETHOSTENT_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETHOSTENT_R_LOCK
@@ -1317,8 +1366,8 @@
    /* gethostent_r() has races with other threads concurrently executing any
     *                of: itself, endhostent(), gethostent(), or sethostent().
     */
-#  define GETHOSTENT_R_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define GETHOSTENT_R_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define GETHOSTENT_R_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define GETHOSTENT_R_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETHOSTID_LOCK
@@ -1335,8 +1384,8 @@
     *            getutxline(), glob(), login(), logout(), pututline(),
     *            pututxline(), setutent(), setutxent(), utmpname(), or
     *            wordexp(). */
-#  define GETLOGIN_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETLOGIN_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETLOGIN_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETLOGIN_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETLOGIN_R_LOCK
@@ -1348,13 +1397,13 @@
     *              getutxline(), glob(), login(), logout(), pututline(),
     *              pututxline(), setutent(), setutxent(), utmpname(), or
     *              wordexp(). */
-#  define GETLOGIN_R_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETLOGIN_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETLOGIN_R_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETLOGIN_R_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETMNTENT_LOCK
-#  define GETMNTENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETMNTENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETMNTENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETMNTENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETMNTENT_R_LOCK
@@ -1368,8 +1417,8 @@
 #endif
 
 #ifndef GETNETBYADDR_LOCK
-#  define GETNETBYADDR_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETNETBYADDR_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETNETBYADDR_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETNETBYADDR_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETNETBYADDR_R_LOCK
@@ -1378,8 +1427,8 @@
 #endif
 
 #ifndef GETNETBYNAME_LOCK
-#  define GETNETBYNAME_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define GETNETBYNAME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define GETNETBYNAME_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define GETNETBYNAME_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETNETBYNAME_R_LOCK
@@ -1391,8 +1440,8 @@
 
    /* getnetent() has races with other threads concurrently executing any of:
     *             itself, endnetent(), or setnetent(). */
-#  define GETNETENT_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define GETNETENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define GETNETENT_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define GETNETENT_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETNETENT_R_LOCK
@@ -1405,8 +1454,8 @@
    /* getnetgrent() has races with other threads concurrently executing any
     *               of: itself, endnetgrent(), getnetgrent_r(), innetgr(), or
     *               setnetgrent(). */
-#  define GETNETGRENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETNETGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETNETGRENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETNETGRENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETNETGRENT_R_LOCK
@@ -1414,32 +1463,32 @@
    /* getnetgrent_r() has races with other threads concurrently executing any
     *                 of: itself, endnetgrent(), getnetgrent(), innetgr(), or
     *                 setnetgrent(). */
-#  define GETNETGRENT_R_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETNETGRENT_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETNETGRENT_R_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETNETGRENT_R_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETOPT_LOCK
 
    /* getopt() has races with other threads concurrently executing any of:
     *          itself, getopt_long(), or getopt_long_only(). */
-#  define GETOPT_LOCK    GENw_ENVr_LOCK_
-#  define GETOPT_UNLOCK  GENw_ENVr_UNLOCK_
+#  define GETOPT_LOCK    GENx_ENVr_LOCK_
+#  define GETOPT_UNLOCK  GENx_ENVr_UNLOCK_
 #endif
 
 #ifndef GETOPT_LONG_LOCK
 
    /* getopt_long() has races with other threads concurrently executing any
     *               of: itself, getopt(), or getopt_long_only(). */
-#  define GETOPT_LONG_LOCK    GENw_ENVr_LOCK_
-#  define GETOPT_LONG_UNLOCK  GENw_ENVr_UNLOCK_
+#  define GETOPT_LONG_LOCK    GENx_ENVr_LOCK_
+#  define GETOPT_LONG_UNLOCK  GENx_ENVr_UNLOCK_
 #endif
 
 #ifndef GETOPT_LONG_ONLY_LOCK
 
    /* getopt_long_only() has races with other threads concurrently executing
     *                    any of: itself, getopt(), or getopt_long(). */
-#  define GETOPT_LONG_ONLY_LOCK    GENw_ENVr_LOCK_
-#  define GETOPT_LONG_ONLY_UNLOCK  GENw_ENVr_UNLOCK_
+#  define GETOPT_LONG_ONLY_LOCK    GENx_ENVr_LOCK_
+#  define GETOPT_LONG_ONLY_UNLOCK  GENx_ENVr_UNLOCK_
 #endif
 
 #ifndef GETPASS_LOCK
@@ -1450,8 +1499,8 @@
 #endif
 
 #ifndef GETPROTOBYNAME_LOCK
-#  define GETPROTOBYNAME_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETPROTOBYNAME_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETPROTOBYNAME_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETPROTOBYNAME_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETPROTOBYNAME_R_LOCK
@@ -1460,8 +1509,8 @@
 #endif
 
 #ifndef GETPROTOBYNUMBER_LOCK
-#  define GETPROTOBYNUMBER_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETPROTOBYNUMBER_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETPROTOBYNUMBER_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETPROTOBYNUMBER_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETPROTOBYNUMBER_R_LOCK
@@ -1473,8 +1522,8 @@
 
    /* getprotoent() has races with other threads concurrently executing any
     *               of: itself, endprotoent(), or setprotoent(). */
-#  define GETPROTOENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETPROTOENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETPROTOENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETPROTOENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETPROTOENT_R_LOCK
@@ -1493,21 +1542,21 @@
 
    /* getpwent() has races with other threads concurrently executing any of:
     *            itself, endpwent(), getpwent_r(), or setpwent(). */
-#  define GETPWENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETPWENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETPWENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETPWENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETPWENT_R_LOCK
 
    /* getpwent_r() has races with other threads concurrently executing any of:
     *              itself, endpwent(), getpwent(), or setpwent(). */
-#  define GETPWENT_R_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETPWENT_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETPWENT_R_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETPWENT_R_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETPWNAM_LOCK
-#  define GETPWNAM_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETPWNAM_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETPWNAM_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETPWNAM_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETPWNAM_R_LOCK
@@ -1516,8 +1565,8 @@
 #endif
 
 #ifndef GETPWUID_LOCK
-#  define GETPWUID_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETPWUID_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETPWUID_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETPWUID_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETPWUID_R_LOCK
@@ -1561,8 +1610,8 @@
 #endif
 
 #ifndef GETSERVBYNAME_LOCK
-#  define GETSERVBYNAME_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETSERVBYNAME_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETSERVBYNAME_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETSERVBYNAME_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETSERVBYNAME_R_LOCK
@@ -1571,8 +1620,8 @@
 #endif
 
 #ifndef GETSERVBYPORT_LOCK
-#  define GETSERVBYPORT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETSERVBYPORT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETSERVBYPORT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETSERVBYPORT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETSERVBYPORT_R_LOCK
@@ -1584,8 +1633,8 @@
 
    /* getservent() has races with other threads concurrently executing any of:
     *              itself, endservent(), or setservent(). */
-#  define GETSERVENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETSERVENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETSERVENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETSERVENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETSERVENT_R_LOCK
@@ -1597,21 +1646,21 @@
 
    /* getspent() has races with other threads concurrently executing any of:
     *            itself, endspent(), getspent_r(), or setspent(). */
-#  define GETSPENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETSPENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETSPENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETSPENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETSPENT_R_LOCK
 
    /* getspent_r() has races with other threads concurrently executing any of:
     *              itself, endspent(), getspent(), or setspent(). */
-#  define GETSPENT_R_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETSPENT_R_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETSPENT_R_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETSPENT_R_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETSPNAM_LOCK
-#  define GETSPNAM_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define GETSPNAM_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define GETSPNAM_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define GETSPNAM_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GETSPNAM_R_LOCK
@@ -1623,16 +1672,16 @@
 
    /* getttyent() has races with other threads concurrently executing any of:
     *             itself, endttyent(), getttynam(), or setttyent(). */
-#  define GETTTYENT_LOCK    GENw_LOCK_
-#  define GETTTYENT_UNLOCK  GENw_UNLOCK_
+#  define GETTTYENT_LOCK    GENx_LOCK_
+#  define GETTTYENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETTTYNAM_LOCK
 
    /* getttynam() has races with other threads concurrently executing any of:
     *             itself, endttyent(), getttyent(), or setttyent(). */
-#  define GETTTYNAM_LOCK    GENw_LOCK_
-#  define GETTTYNAM_UNLOCK  GENw_UNLOCK_
+#  define GETTTYNAM_LOCK    GENx_LOCK_
+#  define GETTTYNAM_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETUSERSHELL_LOCK
@@ -1642,10 +1691,10 @@
 
 #ifndef GETUTENT_LOCK
 
-   /* getutent() must be called at least once in single-threaded mode to
+   /* getutent() Obsolete; use getutxent() instead
+    * getutent() must be called at least once in single-threaded mode to
     *            enable thread-safety in subsequent calls when in
     *            multi-threaded mode.
-    * getutent() Obsolete; use getutxent() instead
     * getutent() is vulnerable to signal ALRM
     * getutent() has races with other threads concurrently executing any of:
     *            itself, endutent(), endutxent(), getlogin(), getlogin_r(),
@@ -1653,8 +1702,8 @@
     *            getutxline(), glob(), login(), logout(), pututline(),
     *            pututxline(), setutent(), setutxent(), utmpname(), or
     *            wordexp(). */
-#  define GETUTENT_LOCK    GENw_LOCK_
-#  define GETUTENT_UNLOCK  GENw_UNLOCK_
+#  define GETUTENT_LOCK    GENx_LOCK_
+#  define GETUTENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETUTID_LOCK
@@ -1668,16 +1717,16 @@
     *           getutxline(), glob(), login(), logout(), pututline(),
     *           pututxline(), setutent(), setutxent(), utmpname(), or
     *           wordexp(). */
-#  define GETUTID_LOCK    GENw_LOCK_
-#  define GETUTID_UNLOCK  GENw_UNLOCK_
+#  define GETUTID_LOCK    GENx_LOCK_
+#  define GETUTID_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETUTLINE_LOCK
 
-   /* getutline() must be called at least once in single-threaded mode to
+   /* getutline() Obsolete; use getutxline() instead
+    * getutline() must be called at least once in single-threaded mode to
     *             enable thread-safety in subsequent calls when in
     *             multi-threaded mode.
-    * getutline() Obsolete; use getutxline() instead
     * getutline() is vulnerable to signal ALRM
     * getutline() has races with other threads concurrently executing any of:
     *             itself, endutent(), endutxent(), getlogin(), getlogin_r(),
@@ -1685,8 +1734,8 @@
     *             getutxline(), glob(), login(), logout(), pututline(),
     *             pututxline(), setutent(), setutxent(), utmpname(), or
     *             wordexp(). */
-#  define GETUTLINE_LOCK    GENw_LOCK_
-#  define GETUTLINE_UNLOCK  GENw_UNLOCK_
+#  define GETUTLINE_LOCK    GENx_LOCK_
+#  define GETUTLINE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETUTXENT_LOCK
@@ -1701,8 +1750,8 @@
     *             getutxline(), glob(), login(), logout(), pututline(),
     *             pututxline(), setutent(), setutxent(), utmpname(), or
     *             wordexp(). */
-#  define GETUTXENT_LOCK    GENw_LOCK_
-#  define GETUTXENT_UNLOCK  GENw_UNLOCK_
+#  define GETUTXENT_LOCK    GENx_LOCK_
+#  define GETUTXENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETUTXID_LOCK
@@ -1717,8 +1766,8 @@
     *            getutxline(), glob(), login(), logout(), pututline(),
     *            pututxline(), setutent(), setutxent(), utmpname(), or
     *            wordexp(). */
-#  define GETUTXID_LOCK    GENw_LOCK_
-#  define GETUTXID_UNLOCK  GENw_UNLOCK_
+#  define GETUTXID_LOCK    GENx_LOCK_
+#  define GETUTXID_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETUTXLINE_LOCK
@@ -1733,8 +1782,8 @@
     *              getutxid(), glob(), login(), logout(), pututline(),
     *              pututxline(), setutent(), setutxent(), utmpname(), or
     *              wordexp(). */
-#  define GETUTXLINE_LOCK    GENw_LOCK_
-#  define GETUTXLINE_UNLOCK  GENw_UNLOCK_
+#  define GETUTXLINE_LOCK    GENx_LOCK_
+#  define GETUTXLINE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETWC_LOCK
@@ -1754,8 +1803,8 @@
     *                     standardized and not widely implemented
     * getwchar_unlocked() has races with other threads concurrently executing
     *                     either itself or getchar_unlocked. */
-#  define GETWCHAR_UNLOCKED_LOCK    GENw_LOCK_
-#  define GETWCHAR_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define GETWCHAR_UNLOCKED_LOCK    GENx_LOCK_
+#  define GETWCHAR_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GETWC_UNLOCKED_LOCK
@@ -1772,8 +1821,8 @@
     *                  fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
     *                  getc_unlocked(), putc_unlocked(), or putwc_unlocked().
     */
-#  define GETWC_UNLOCKED_LOCK    GENw_LOCK_
-#  define GETWC_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define GETWC_UNLOCKED_LOCK    GENx_LOCK_
+#  define GETWC_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef GLOB_LOCK
@@ -1784,16 +1833,16 @@
     *        getutent(), getutid(), getutline(), getutxent(), getutxid(),
     *        getutxline(), login(), logout(), pututline(), pututxline(),
     *        setutent(), setutxent(), utmpname(), or wordexp(). */
-#  define GLOB_LOCK    GENw_ENVr_LCr_LOCK_(  LC_COLLATEb_)
-#  define GLOB_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_COLLATEb_)
+#  define GLOB_LOCK    GENx_ENVr_LCr_LOCK_(  LC_COLLATEb_)
+#  define GLOB_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_COLLATEb_)
 #endif
 
 #ifndef GMTIME_LOCK
 
    /* gmtime() has races with other threads concurrently executing any of:
     *          itself, ctime(), or localtime(). */
-#  define GMTIME_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define GMTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define GMTIME_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define GMTIME_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef GMTIME_R_LOCK
@@ -1810,53 +1859,53 @@
 
    /* hcreate() has races with other threads concurrently executing any of:
     *           itself, hdestroy(), or hsearch(). */
-#  define HCREATE_LOCK    GENw_LOCK_
-#  define HCREATE_UNLOCK  GENw_UNLOCK_
+#  define HCREATE_LOCK    GENx_LOCK_
+#  define HCREATE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef HCREATE_R_LOCK
 
    /* hcreate_r() has races with other threads concurrently executing any of:
     *             itself, hdestroy_r(), or hsearch_r(). */
-#  define HCREATE_R_LOCK    GENw_LOCK_
-#  define HCREATE_R_UNLOCK  GENw_UNLOCK_
+#  define HCREATE_R_LOCK    GENx_LOCK_
+#  define HCREATE_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef HDESTROY_LOCK
 
    /* hdestroy() has races with other threads concurrently executing any of:
     *            itself, hcreate(), or hsearch(). */
-#  define HDESTROY_LOCK    GENw_LOCK_
-#  define HDESTROY_UNLOCK  GENw_UNLOCK_
+#  define HDESTROY_LOCK    GENx_LOCK_
+#  define HDESTROY_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef HDESTROY_R_LOCK
 
    /* hdestroy_r() has races with other threads concurrently executing any of:
     *              itself, hcreate_r(), or hsearch_r(). */
-#  define HDESTROY_R_LOCK    GENw_LOCK_
-#  define HDESTROY_R_UNLOCK  GENw_UNLOCK_
+#  define HDESTROY_R_LOCK    GENx_LOCK_
+#  define HDESTROY_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef HSEARCH_LOCK
 
    /* hsearch() has races with other threads concurrently executing any of:
     *           itself, hcreate(), or hdestroy(). */
-#  define HSEARCH_LOCK    GENw_LOCK_
-#  define HSEARCH_UNLOCK  GENw_UNLOCK_
+#  define HSEARCH_LOCK    GENx_LOCK_
+#  define HSEARCH_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef HSEARCH_R_LOCK
 
    /* hsearch_r() has races with other threads concurrently executing any of:
     *             itself, hcreate_r(), or hdestroy_r(). */
-#  define HSEARCH_R_LOCK    GENw_LOCK_
-#  define HSEARCH_R_UNLOCK  GENw_UNLOCK_
+#  define HSEARCH_R_LOCK    GENx_LOCK_
+#  define HSEARCH_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ICONV_LOCK
-#  define ICONV_LOCK    GENw_LOCK_
-#  define ICONV_UNLOCK  GENw_UNLOCK_
+#  define ICONV_LOCK    GENx_LOCK_
+#  define ICONV_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef ICONV_OPEN_LOCK
@@ -1903,8 +1952,8 @@
 
    /* initstate_r() has races with other threads concurrently executing any
     *               of: itself, random_r(), setstate_r(), or srandom_r(). */
-#  define INITSTATE_R_LOCK    GENw_LOCK_
-#  define INITSTATE_R_UNLOCK  GENw_UNLOCK_
+#  define INITSTATE_R_LOCK    GENx_LOCK_
+#  define INITSTATE_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef INNETGR_LOCK
@@ -1912,8 +1961,8 @@
    /* innetgr() has races with other threads concurrently executing any of:
     *           itself, endnetgrent(), getnetgrent(), getnetgrent_r(), or
     *           setnetgrent(). */
-#  define INNETGR_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define INNETGR_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define INNETGR_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define INNETGR_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef IRUSEROK_LOCK
@@ -2232,8 +2281,8 @@
    /* jrand48() has races with other threads concurrently executing any of:
     *           itself, drand48(), erand48(), lcong48(), lrand48(), mrand48(),
     *           nrand48(), seed48(), or srand48(). */
-#  define JRAND48_LOCK    GENw_LOCK_
-#  define JRAND48_UNLOCK  GENw_UNLOCK_
+#  define JRAND48_LOCK    GENx_LOCK_
+#  define JRAND48_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef JRAND48_R_LOCK
@@ -2241,13 +2290,13 @@
    /* jrand48_r() has races with other threads concurrently executing any of:
     *             itself, drand48_r(), erand48_r(), lcong48_r(), lrand48_r(),
     *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
-#  define JRAND48_R_LOCK    GENw_LOCK_
-#  define JRAND48_R_UNLOCK  GENw_UNLOCK_
+#  define JRAND48_R_LOCK    GENx_LOCK_
+#  define JRAND48_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef L64A_LOCK
-#  define L64A_LOCK    GENw_LOCK_
-#  define L64A_UNLOCK  GENw_UNLOCK_
+#  define L64A_LOCK    GENx_LOCK_
+#  define L64A_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LCONG48_LOCK
@@ -2255,8 +2304,8 @@
    /* lcong48() has races with other threads concurrently executing any of:
     *           itself, drand48(), erand48(), jrand48(), lrand48(), mrand48(),
     *           nrand48(), seed48(), or srand48(). */
-#  define LCONG48_LOCK    GENw_LOCK_
-#  define LCONG48_UNLOCK  GENw_UNLOCK_
+#  define LCONG48_LOCK    GENx_LOCK_
+#  define LCONG48_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LCONG48_R_LOCK
@@ -2264,57 +2313,58 @@
    /* lcong48_r() has races with other threads concurrently executing any of:
     *             itself, drand48_r(), erand48_r(), jrand48_r(), lrand48_r(),
     *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
-#  define LCONG48_R_LOCK    GENw_LOCK_
-#  define LCONG48_R_UNLOCK  GENw_UNLOCK_
+#  define LCONG48_R_LOCK    GENx_LOCK_
+#  define LCONG48_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LGAMMA_LOCK
 
    /* lgamma() has races with other threads concurrently executing any of:
     *          itself, gamma(), gammaf(), gammal(), lgammaf(), or lgammal(). */
-#  define LGAMMA_LOCK    GENw_LOCK_
-#  define LGAMMA_UNLOCK  GENw_UNLOCK_
+#  define LGAMMA_LOCK    GENx_LOCK_
+#  define LGAMMA_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LGAMMAF_LOCK
 
    /* lgammaf() has races with other threads concurrently executing any of:
     *           itself, gamma(), gammaf(), gammal(), lgamma(), or lgammal(). */
-#  define LGAMMAF_LOCK    GENw_LOCK_
-#  define LGAMMAF_UNLOCK  GENw_UNLOCK_
+#  define LGAMMAF_LOCK    GENx_LOCK_
+#  define LGAMMAF_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LGAMMAL_LOCK
 
    /* lgammal() has races with other threads concurrently executing any of:
     *           itself, gamma(), gammaf(), gammal(), lgamma(), or lgammaf(). */
-#  define LGAMMAL_LOCK    GENw_LOCK_
-#  define LGAMMAL_UNLOCK  GENw_UNLOCK_
+#  define LGAMMAL_LOCK    GENx_LOCK_
+#  define LGAMMAL_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LOCALECONV_LOCK
 
    /* localeconv() Use Perl_localeconv() instead */
-#  define LOCALECONV_LOCK    GENw_LCr_LOCK_(  LC_NUMERICb_|LC_MONETARYb_)
-#  define LOCALECONV_UNLOCK  GENw_LCr_UNLOCK_(LC_NUMERICb_|LC_MONETARYb_)
+#  define LOCALECONV_LOCK    GENx_LCr_LOCK_(  LC_NUMERICb_|LC_MONETARYb_)
+#  define LOCALECONV_UNLOCK  GENx_LCr_UNLOCK_(LC_NUMERICb_|LC_MONETARYb_)
 #endif
 
 #ifndef LOCALTIME_LOCK
 
    /* localtime() has races with other threads concurrently executing any of:
-    *             itself, ctime(), ctime_r(), gmtime(), localtime_r(),
-    *             mktime(), strftime(), or tzset(). */
-#  define LOCALTIME_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define LOCALTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+    *             itself, ctime(), ctime_r(), daylight(), gmtime(),
+    *             localtime_r(), mktime(), strftime(), timezone(), tzname(),
+    *             or tzset(). */
+#  define LOCALTIME_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define LOCALTIME_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef LOCALTIME_R_LOCK
 
    /* localtime_r() has races with other threads concurrently executing any
-    *               of: itself, ctime(), ctime_r(), localtime(), mktime(),
-    *               strftime(), or tzset(). */
-#  define LOCALTIME_R_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define LOCALTIME_R_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+    *               of: itself, ctime(), ctime_r(), daylight(), localtime(),
+    *               mktime(), strftime(), timezone(), tzname(), or tzset(). */
+#  define LOCALTIME_R_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define LOCALTIME_R_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef LOGIN_LOCK
@@ -2326,16 +2376,16 @@
     *         getutent(), getutid(), getutline(), getutxent(), getutxid(),
     *         getutxline(), glob(), logout(), pututline(), pututxline(),
     *         setutent(), setutxent(), utmpname(), or wordexp(). */
-#  define LOGIN_LOCK    GENw_LOCK_
-#  define LOGIN_UNLOCK  GENw_UNLOCK_
+#  define LOGIN_LOCK    GENx_LOCK_
+#  define LOGIN_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LOGIN_TTY_LOCK
 
    /* login_tty() has races with other threads concurrently executing either
     *             itself or ttyname. */
-#  define LOGIN_TTY_LOCK    GENw_LOCK_
-#  define LOGIN_TTY_UNLOCK  GENw_UNLOCK_
+#  define LOGIN_TTY_LOCK    GENx_LOCK_
+#  define LOGIN_TTY_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LOGOUT_LOCK
@@ -2347,8 +2397,8 @@
     *          getutent(), getutid(), getutline(), getutxent(), getutxid(),
     *          getutxline(), glob(), login(), pututline(), pututxline(),
     *          setutent(), setutxent(), utmpname(), or wordexp(). */
-#  define LOGOUT_LOCK    GENw_LOCK_
-#  define LOGOUT_UNLOCK  GENw_UNLOCK_
+#  define LOGOUT_LOCK    GENx_LOCK_
+#  define LOGOUT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LOGWTMP_LOCK
@@ -2364,8 +2414,8 @@
    /* lrand48() has races with other threads concurrently executing any of:
     *           itself, drand48(), erand48(), jrand48(), lcong48(), mrand48(),
     *           nrand48(), seed48(), or srand48(). */
-#  define LRAND48_LOCK    GENw_LOCK_
-#  define LRAND48_UNLOCK  GENw_UNLOCK_
+#  define LRAND48_LOCK    GENx_LOCK_
+#  define LRAND48_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef LRAND48_R_LOCK
@@ -2373,8 +2423,8 @@
    /* lrand48_r() has races with other threads concurrently executing any of:
     *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
     *             mrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
-#  define LRAND48_R_LOCK    GENw_LOCK_
-#  define LRAND48_R_UNLOCK  GENw_UNLOCK_
+#  define LRAND48_R_LOCK    GENx_LOCK_
+#  define LRAND48_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef MAKECONTEXT_LOCK
@@ -2382,8 +2432,8 @@
    /* makecontext() has races with other threads concurrently executing any
     *               of: itself, getcontext(), setcontext(), or swapcontext().
     */
-#  define MAKECONTEXT_LOCK    GENw_LOCK_
-#  define MAKECONTEXT_UNLOCK  GENw_UNLOCK_
+#  define MAKECONTEXT_LOCK    GENx_LOCK_
+#  define MAKECONTEXT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef MALLINFO_LOCK
@@ -2391,8 +2441,8 @@
    /* mallinfo() must be called at least once in single-threaded mode to
     *            enable thread-safety in subsequent calls when in
     *            multi-threaded mode. */
-#  define MALLINFO_LOCK    GENw_LOCK_
-#  define MALLINFO_UNLOCK  GENw_UNLOCK_
+#  define MALLINFO_LOCK    GENx_LOCK_
+#  define MALLINFO_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef MB_CUR_MAX_LOCK
@@ -2401,8 +2451,8 @@
 #endif
 
 #ifndef MBLEN_LOCK
-#  define MBLEN_LOCK    GENw_LCr_LOCK_(  LC_CTYPEb_)
-#  define MBLEN_UNLOCK  GENw_LCr_UNLOCK_(LC_CTYPEb_)
+#  define MBLEN_LOCK    GENx_LCr_LOCK_(  LC_CTYPEb_)
+#  define MBLEN_UNLOCK  GENx_LCr_UNLOCK_(LC_CTYPEb_)
 #endif
 
 #ifndef MBRLEN_LOCK
@@ -2444,16 +2494,16 @@
 #endif
 
 #ifndef MBTOWC_LOCK
-#  define MBTOWC_LOCK    GENw_LCr_LOCK_(  LC_CTYPEb_)
-#  define MBTOWC_UNLOCK  GENw_LCr_UNLOCK_(LC_CTYPEb_)
+#  define MBTOWC_LOCK    GENx_LCr_LOCK_(  LC_CTYPEb_)
+#  define MBTOWC_UNLOCK  GENx_LCr_UNLOCK_(LC_CTYPEb_)
 #endif
 
 #ifndef MCHECK_LOCK
 
    /* mcheck() has races with other threads concurrently executing any of:
     *          itself, mcheck_check_all(), mcheck_pedantic(), or mprobe(). */
-#  define MCHECK_LOCK    GENw_LOCK_
-#  define MCHECK_UNLOCK  GENw_UNLOCK_
+#  define MCHECK_LOCK    GENx_LOCK_
+#  define MCHECK_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef MCHECK_CHECK_ALL_LOCK
@@ -2461,8 +2511,8 @@
    /* mcheck_check_all() has races with other threads concurrently executing
     *                    any of: itself, mcheck(), mcheck_pedantic(), or
     *                    mprobe(). */
-#  define MCHECK_CHECK_ALL_LOCK    GENw_LOCK_
-#  define MCHECK_CHECK_ALL_UNLOCK  GENw_UNLOCK_
+#  define MCHECK_CHECK_ALL_LOCK    GENx_LOCK_
+#  define MCHECK_CHECK_ALL_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef MCHECK_PEDANTIC_LOCK
@@ -2470,25 +2520,25 @@
    /* mcheck_pedantic() has races with other threads concurrently executing
     *                   any of: itself, mcheck(), mcheck_check_all(), or
     *                   mprobe(). */
-#  define MCHECK_PEDANTIC_LOCK    GENw_LOCK_
-#  define MCHECK_PEDANTIC_UNLOCK  GENw_UNLOCK_
+#  define MCHECK_PEDANTIC_LOCK    GENx_LOCK_
+#  define MCHECK_PEDANTIC_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef MKTIME_LOCK
 
    /* mktime() has races with other threads concurrently executing any of:
-    *          itself, ctime(), ctime_r(), localtime(), localtime_r(),
-    *          strftime(), or tzset(). */
-#  define MKTIME_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define MKTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+    *          itself, ctime(), ctime_r(), daylight(), localtime(),
+    *          localtime_r(), strftime(), timezone(), tzname(), or tzset(). */
+#  define MKTIME_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define MKTIME_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef MPROBE_LOCK
 
    /* mprobe() has races with other threads concurrently executing any of:
     *          itself, mcheck(), mcheck_check_all(), or mcheck_pedantic(). */
-#  define MPROBE_LOCK    GENw_LOCK_
-#  define MPROBE_UNLOCK  GENw_UNLOCK_
+#  define MPROBE_LOCK    GENx_LOCK_
+#  define MPROBE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef MRAND48_LOCK
@@ -2496,8 +2546,8 @@
    /* mrand48() has races with other threads concurrently executing any of:
     *           itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
     *           nrand48(), seed48(), or srand48(). */
-#  define MRAND48_LOCK    GENw_LOCK_
-#  define MRAND48_UNLOCK  GENw_UNLOCK_
+#  define MRAND48_LOCK    GENx_LOCK_
+#  define MRAND48_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef MRAND48_R_LOCK
@@ -2505,8 +2555,8 @@
    /* mrand48_r() has races with other threads concurrently executing any of:
     *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
     *             lrand48_r(), nrand48_r(), seed48_r(), or srand48_r(). */
-#  define MRAND48_R_LOCK    GENw_LOCK_
-#  define MRAND48_R_UNLOCK  GENw_UNLOCK_
+#  define MRAND48_R_LOCK    GENx_LOCK_
+#  define MRAND48_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef MTRACE_LOCK
@@ -2547,8 +2597,8 @@
 #endif
 
 #ifndef NL_LANGINFO_LOCK
-#  define NL_LANGINFO_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define NL_LANGINFO_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define NL_LANGINFO_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define NL_LANGINFO_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef NRAND48_LOCK
@@ -2556,8 +2606,8 @@
    /* nrand48() has races with other threads concurrently executing any of:
     *           itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
     *           mrand48(), seed48(), or srand48(). */
-#  define NRAND48_LOCK    GENw_LOCK_
-#  define NRAND48_UNLOCK  GENw_UNLOCK_
+#  define NRAND48_LOCK    GENx_LOCK_
+#  define NRAND48_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef NRAND48_R_LOCK
@@ -2565,8 +2615,8 @@
    /* nrand48_r() has races with other threads concurrently executing any of:
     *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
     *             lrand48_r(), mrand48_r(), seed48_r(), or srand48_r(). */
-#  define NRAND48_R_LOCK    GENw_LOCK_
-#  define NRAND48_R_UNLOCK  GENw_UNLOCK_
+#  define NRAND48_R_LOCK    GENx_LOCK_
+#  define NRAND48_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef OPENPTY_LOCK
@@ -2575,13 +2625,13 @@
 #endif
 
 #ifndef PERROR_LOCK
-#  define PERROR_LOCK    GENw_LOCK_
-#  define PERROR_UNLOCK  GENw_UNLOCK_
+#  define PERROR_LOCK    GENx_LOCK_
+#  define PERROR_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef POSIX_FALLOCATE_LOCK
 
-   /* posix_fallocate() The safety in glibc depends on the file system. 
+   /* posix_fallocate() The safety in glibc depends on the file system.
     *                   Generally safe */
 #  define POSIX_FALLOCATE_LOCK    NOOP
 #  define POSIX_FALLOCATE_UNLOCK  NOOP
@@ -2608,8 +2658,8 @@
 #endif
 
 #ifndef PTSNAME_LOCK
-#  define PTSNAME_LOCK    GENw_LOCK_
-#  define PTSNAME_UNLOCK  GENw_UNLOCK_
+#  define PTSNAME_LOCK    GENx_LOCK_
+#  define PTSNAME_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef PUTCHAR_UNLOCKED_LOCK
@@ -2618,8 +2668,8 @@
     *                    locked stdin
     * putchar_unlocked() has races with other threads concurrently executing
     *                    either itself or putwchar_unlocked. */
-#  define PUTCHAR_UNLOCKED_LOCK    GENw_LOCK_
-#  define PUTCHAR_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define PUTCHAR_UNLOCKED_LOCK    GENx_LOCK_
+#  define PUTCHAR_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef PUTC_UNLOCKED_LOCK
@@ -2635,13 +2685,13 @@
     *                 fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
     *                 getc_unlocked(), getwc_unlocked(), or putwc_unlocked().
     */
-#  define PUTC_UNLOCKED_LOCK    GENw_LOCK_
-#  define PUTC_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define PUTC_UNLOCKED_LOCK    GENx_LOCK_
+#  define PUTC_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef PUTENV_LOCK
-#  define PUTENV_LOCK    ENVw_LOCK_
-#  define PUTENV_UNLOCK  ENVw_UNLOCK_
+#  define PUTENV_LOCK    ENVx_LOCK_
+#  define PUTENV_UNLOCK  ENVx_UNLOCK_
 #endif
 
 #ifndef PUTPWENT_LOCK
@@ -2663,8 +2713,8 @@
     *             getutent(), getutid(), getutline(), getutxent(), getutxid(),
     *             getutxline(), glob(), login(), logout(), pututxline(),
     *             setutent(), setutxent(), utmpname(), or wordexp(). */
-#  define PUTUTLINE_LOCK    GENw_LOCK_
-#  define PUTUTLINE_UNLOCK  GENw_UNLOCK_
+#  define PUTUTLINE_LOCK    GENx_LOCK_
+#  define PUTUTLINE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef PUTUTXLINE_LOCK
@@ -2676,8 +2726,8 @@
     *              getutxid(), getutxline(), glob(), login(), logout(),
     *              pututline(), setutent(), setutxent(), utmpname(), or
     *              wordexp(). */
-#  define PUTUTXLINE_LOCK    GENw_LOCK_
-#  define PUTUTXLINE_UNLOCK  GENw_UNLOCK_
+#  define PUTUTXLINE_LOCK    GENx_LOCK_
+#  define PUTUTXLINE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef PUTWC_LOCK
@@ -2697,8 +2747,8 @@
     *                     standardized and not widely implemented
     * putwchar_unlocked() has races with other threads concurrently executing
     *                     either itself or putchar_unlocked. */
-#  define PUTWCHAR_UNLOCKED_LOCK    GENw_LOCK_
-#  define PUTWCHAR_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define PUTWCHAR_UNLOCKED_LOCK    GENx_LOCK_
+#  define PUTWCHAR_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef PUTWC_UNLOCKED_LOCK
@@ -2715,8 +2765,8 @@
     *                  fread_unlocked(), __fsetlocking(), fwrite_unlocked(),
     *                  getc_unlocked(), getwc_unlocked(), or putc_unlocked().
     */
-#  define PUTWC_UNLOCKED_LOCK    GENw_LOCK_
-#  define PUTWC_UNLOCKED_UNLOCK  GENw_UNLOCK_
+#  define PUTWC_UNLOCKED_LOCK    GENx_LOCK_
+#  define PUTWC_UNLOCKED_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef PVALLOC_LOCK
@@ -2731,15 +2781,15 @@
 #ifndef QECVT_LOCK
 
    /* qecvt() Obsolete; use snprintf() instead */
-#  define QECVT_LOCK    GENw_LOCK_
-#  define QECVT_UNLOCK  GENw_UNLOCK_
+#  define QECVT_LOCK    GENx_LOCK_
+#  define QECVT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef QFCVT_LOCK
 
    /* qfcvt() Obsolete; use snprintf() instead */
-#  define QFCVT_LOCK    GENw_LOCK_
-#  define QFCVT_UNLOCK  GENw_UNLOCK_
+#  define QFCVT_LOCK    GENx_LOCK_
+#  define QFCVT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef RAND_LOCK
@@ -2758,8 +2808,8 @@
 
    /* random_r() has races with other threads concurrently executing any of:
     *            itself, initstate_r(), setstate_r(), or srandom_r(). */
-#  define RANDOM_R_LOCK    GENw_LOCK_
-#  define RANDOM_R_UNLOCK  GENw_UNLOCK_
+#  define RANDOM_R_LOCK    GENx_LOCK_
+#  define RANDOM_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef RCMD_LOCK
@@ -2773,8 +2823,8 @@
 #endif
 
 #ifndef READDIR_LOCK
-#  define READDIR_LOCK    GENw_LOCK_
-#  define READDIR_UNLOCK  GENw_UNLOCK_
+#  define READDIR_LOCK    GENx_LOCK_
+#  define READDIR_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef RE_COMP_LOCK
@@ -2880,8 +2930,8 @@
 #    define SECURE_GETENV_LOCK    ENVr_LOCK_
 #    define SECURE_GETENV_UNLOCK  ENVr_UNLOCK_
 #  else
-#    define SECURE_GETENV_LOCK    GENw_ENVr_LOCK_
-#    define SECURE_GETENV_UNLOCK  GENw_ENVr_UNLOCK_
+#    define SECURE_GETENV_LOCK    GENx_ENVr_LOCK_
+#    define SECURE_GETENV_UNLOCK  GENx_ENVr_UNLOCK_
 #  endif
 #endif
 
@@ -2890,8 +2940,8 @@
    /* seed48() has races with other threads concurrently executing any of:
     *          itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
     *          mrand48(), nrand48(), or srand48(). */
-#  define SEED48_LOCK    GENw_LOCK_
-#  define SEED48_UNLOCK  GENw_UNLOCK_
+#  define SEED48_LOCK    GENx_LOCK_
+#  define SEED48_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SEED48_R_LOCK
@@ -2899,8 +2949,8 @@
    /* seed48_r() has races with other threads concurrently executing any of:
     *            itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
     *            lrand48_r(), mrand48_r(), nrand48_r(), or srand48_r(). */
-#  define SEED48_R_LOCK    GENw_LOCK_
-#  define SEED48_R_UNLOCK  GENw_UNLOCK_
+#  define SEED48_R_LOCK    GENx_LOCK_
+#  define SEED48_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SETALIASENT_LOCK
@@ -2912,13 +2962,13 @@
 
    /* setcontext() has races with other threads concurrently executing any of:
     *              itself, getcontext(), makecontext(), or swapcontext(). */
-#  define SETCONTEXT_LOCK    GENw_LOCK_
-#  define SETCONTEXT_UNLOCK  GENw_UNLOCK_
+#  define SETCONTEXT_LOCK    GENx_LOCK_
+#  define SETCONTEXT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SETENV_LOCK
-#  define SETENV_LOCK    ENVw_LOCK_
-#  define SETENV_UNLOCK  ENVw_UNLOCK_
+#  define SETENV_LOCK    ENVx_LOCK_
+#  define SETENV_UNLOCK  ENVx_UNLOCK_
 #endif
 
 #ifndef SETFSENT_LOCK
@@ -2926,43 +2976,43 @@
    /* setfsent() has races with other threads concurrently executing any of:
     *            itself, endfsent(), getfsent(), getfsfile(), or getfsspec().
     */
-#  define SETFSENT_LOCK    GENw_LOCK_
-#  define SETFSENT_UNLOCK  GENw_UNLOCK_
+#  define SETFSENT_LOCK    GENx_LOCK_
+#  define SETFSENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SETGRENT_LOCK
 
    /* setgrent() has races with other threads concurrently executing any of:
     *            itself, endgrent(), getgrent(), or getgrent_r(). */
-#  define SETGRENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define SETGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define SETGRENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define SETGRENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef SETHOSTENT_LOCK
 
    /* sethostent() has races with other threads concurrently executing any of:
     *              itself, endhostent(), gethostent(), or gethostent_r(). */
-#  define SETHOSTENT_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define SETHOSTENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define SETHOSTENT_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define SETHOSTENT_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef SETHOSTID_LOCK
-#  define SETHOSTID_LOCK    GENw_LOCK_
-#  define SETHOSTID_UNLOCK  GENw_UNLOCK_
+#  define SETHOSTID_LOCK    GENx_LOCK_
+#  define SETHOSTID_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SETKEY_LOCK
 
    /* setkey() has races with other threads concurrently executing any of:
     *          itself, crypt(), or encrypt(). */
-#  define SETKEY_LOCK    GENw_LOCK_
-#  define SETKEY_UNLOCK  GENw_UNLOCK_
+#  define SETKEY_LOCK    GENx_LOCK_
+#  define SETKEY_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SETLOCALE_LOCK
 #  ifndef WIN32
-#    define SETLOCALE_LOCK    ENVr_LCw_LOCK_(  LC_ALLb_)
-#    define SETLOCALE_UNLOCK  ENVr_LCw_UNLOCK_(LC_ALLb_)
+#    define SETLOCALE_LOCK    ENVr_LCx_LOCK_(  LC_ALLb_)
+#    define SETLOCALE_UNLOCK  ENVr_LCx_UNLOCK_(LC_ALLb_)
 #  else
 #    define SETLOCALE_LOCK    NOOP
 #    define SETLOCALE_UNLOCK  NOOP
@@ -2970,16 +3020,16 @@
 #endif
 
 #ifndef SETLOGMASK_LOCK
-#  define SETLOGMASK_LOCK    GENw_LOCK_
-#  define SETLOGMASK_UNLOCK  GENw_UNLOCK_
+#  define SETLOGMASK_LOCK    GENx_LOCK_
+#  define SETLOGMASK_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SETNETENT_LOCK
 
    /* setnetent() has races with other threads concurrently executing any of:
     *             itself, endnetent(), or getnetent(). */
-#  define SETNETENT_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define SETNETENT_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+#  define SETNETENT_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define SETNETENT_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef SETNETGRENT_LOCK
@@ -2987,24 +3037,24 @@
    /* setnetgrent() has races with other threads concurrently executing any
     *               of: itself, endnetgrent(), getnetgrent(), getnetgrent_r(),
     *               or innetgr(). */
-#  define SETNETGRENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define SETNETGRENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define SETNETGRENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define SETNETGRENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef SETPROTOENT_LOCK
 
    /* setprotoent() has races with other threads concurrently executing any
     *               of: itself, endprotoent(), or getprotoent(). */
-#  define SETPROTOENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define SETPROTOENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define SETPROTOENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define SETPROTOENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef SETPWENT_LOCK
 
    /* setpwent() has races with other threads concurrently executing any of:
     *            itself, endpwent(), getpwent(), or getpwent_r(). */
-#  define SETPWENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define SETPWENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define SETPWENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define SETPWENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef SETRPCENT_LOCK
@@ -3016,32 +3066,32 @@
 
    /* setservent() has races with other threads concurrently executing any of:
     *              itself, endservent(), or getservent(). */
-#  define SETSERVENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define SETSERVENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define SETSERVENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define SETSERVENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef SETSPENT_LOCK
 
    /* setspent() has races with other threads concurrently executing any of:
     *            itself, endspent(), getspent(), or getspent_r(). */
-#  define SETSPENT_LOCK    GENw_LCr_LOCK_(  LC_ALLb_)
-#  define SETSPENT_UNLOCK  GENw_LCr_UNLOCK_(LC_ALLb_)
+#  define SETSPENT_LOCK    GENx_LCr_LOCK_(  LC_ALLb_)
+#  define SETSPENT_UNLOCK  GENx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef SETSTATE_R_LOCK
 
    /* setstate_r() has races with other threads concurrently executing any of:
     *              itself, initstate_r(), random_r(), or srandom_r(). */
-#  define SETSTATE_R_LOCK    GENw_LOCK_
-#  define SETSTATE_R_UNLOCK  GENw_UNLOCK_
+#  define SETSTATE_R_LOCK    GENx_LOCK_
+#  define SETSTATE_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SETTTYENT_LOCK
 
    /* setttyent() has races with other threads concurrently executing any of:
     *             itself, endttyent(), getttyent(), or getttynam(). */
-#  define SETTTYENT_LOCK    GENw_LOCK_
-#  define SETTTYENT_UNLOCK  GENw_UNLOCK_
+#  define SETTTYENT_LOCK    GENx_LOCK_
+#  define SETTTYENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SETUSERSHELL_LOCK
@@ -3057,8 +3107,8 @@
     *            getutent(), getutid(), getutline(), getutxent(), getutxid(),
     *            getutxline(), glob(), login(), logout(), pututline(),
     *            pututxline(), setutxent(), utmpname(), or wordexp(). */
-#  define SETUTENT_LOCK    GENw_LOCK_
-#  define SETUTENT_UNLOCK  GENw_UNLOCK_
+#  define SETUTENT_LOCK    GENx_LOCK_
+#  define SETUTENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SETUTXENT_LOCK
@@ -3068,13 +3118,13 @@
     *             getutent(), getutid(), getutline(), getutxent(), getutxid(),
     *             getutxline(), glob(), login(), logout(), pututline(),
     *             pututxline(), setutent(), utmpname(), or wordexp(). */
-#  define SETUTXENT_LOCK    GENw_LOCK_
-#  define SETUTXENT_UNLOCK  GENw_UNLOCK_
+#  define SETUTXENT_LOCK    GENx_LOCK_
+#  define SETUTXENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SGETSPENT_LOCK
-#  define SGETSPENT_LOCK    GENw_LOCK_
-#  define SGETSPENT_UNLOCK  GENw_UNLOCK_
+#  define SGETSPENT_LOCK    GENx_LOCK_
+#  define SGETSPENT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SGETSPENT_R_LOCK
@@ -3096,8 +3146,8 @@
 
    /* siginterrupt() Obsolete; use sigaction(2) with the SA_RESTART flag
     *                instead */
-#  define SIGINTERRUPT_LOCK    GENw_LOCK_
-#  define SIGINTERRUPT_UNLOCK  GENw_UNLOCK_
+#  define SIGINTERRUPT_LOCK    GENx_LOCK_
+#  define SIGINTERRUPT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SLEEP_LOCK
@@ -3122,8 +3172,8 @@
    /* srand48() has races with other threads concurrently executing any of:
     *           itself, drand48(), erand48(), jrand48(), lcong48(), lrand48(),
     *           mrand48(), nrand48(), or seed48(). */
-#  define SRAND48_LOCK    GENw_LOCK_
-#  define SRAND48_UNLOCK  GENw_UNLOCK_
+#  define SRAND48_LOCK    GENx_LOCK_
+#  define SRAND48_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SRAND48_R_LOCK
@@ -3131,16 +3181,16 @@
    /* srand48_r() has races with other threads concurrently executing any of:
     *             itself, drand48_r(), erand48_r(), jrand48_r(), lcong48_r(),
     *             lrand48_r(), mrand48_r(), nrand48_r(), or seed48_r(). */
-#  define SRAND48_R_LOCK    GENw_LOCK_
-#  define SRAND48_R_UNLOCK  GENw_UNLOCK_
+#  define SRAND48_R_LOCK    GENx_LOCK_
+#  define SRAND48_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SRANDOM_R_LOCK
 
    /* srandom_r() has races with other threads concurrently executing any of:
     *             itself, initstate_r(), random_r(), or setstate_r(). */
-#  define SRANDOM_R_LOCK    GENw_LOCK_
-#  define SRANDOM_R_UNLOCK  GENw_UNLOCK_
+#  define SRANDOM_R_LOCK    GENx_LOCK_
+#  define SRANDOM_R_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SSCANF_LOCK
@@ -3172,8 +3222,8 @@
 #endif
 
 #ifndef STRERROR_LOCK
-#  define STRERROR_LOCK    GENw_LCr_LOCK_(  LC_MESSAGESb_)
-#  define STRERROR_UNLOCK  GENw_LCr_UNLOCK_(LC_MESSAGESb_)
+#  define STRERROR_LOCK    GENx_LCr_LOCK_(  LC_MESSAGESb_)
+#  define STRERROR_UNLOCK  GENx_LCr_UNLOCK_(LC_MESSAGESb_)
 #endif
 
 #ifndef STRERROR_L_LOCK
@@ -3221,10 +3271,10 @@
 
    /* strftime() Use Perl_sv_strftime_tm() or Perl_sv_strftime_ints() instead
     * strftime() has races with other threads concurrently executing any of:
-    *            itself, ctime(), ctime_r(), localtime(), localtime_r(),
-    *            mktime(), or tzset(). */
-#  define STRFTIME_LOCK    GENw_ENVr_LCr_LOCK_(  LC_TIMEb_)
-#  define STRFTIME_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_TIMEb_)
+    *            itself, ctime(), ctime_r(), daylight(), localtime(),
+    *            localtime_r(), mktime(), timezone(), tzname(), or tzset(). */
+#  define STRFTIME_LOCK    GENx_ENVr_LCr_LOCK_(  LC_TIMEb_)
+#  define STRFTIME_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_TIMEb_)
 #endif
 
 #ifndef STRFTIME_L_LOCK
@@ -3246,8 +3296,8 @@
 #endif
 
 #ifndef STRSIGNAL_LOCK
-#  define STRSIGNAL_LOCK    GENw_LCr_LOCK_(  LC_MESSAGESb_)
-#  define STRSIGNAL_UNLOCK  GENw_LCr_UNLOCK_(LC_MESSAGESb_)
+#  define STRSIGNAL_LOCK    GENx_LCr_LOCK_(  LC_MESSAGESb_)
+#  define STRSIGNAL_UNLOCK  GENx_LCr_UNLOCK_(LC_MESSAGESb_)
 #endif
 
 #ifndef STRTOD_LOCK
@@ -3268,8 +3318,8 @@
 #ifndef STRTOK_LOCK
 
    /* strtok() To avoid needing to lock, use strtok_r() instead */
-#  define STRTOK_LOCK    GENw_LOCK_
-#  define STRTOK_UNLOCK  GENw_UNLOCK_
+#  define STRTOK_LOCK    GENx_LOCK_
+#  define STRTOK_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef STRTOL_LOCK
@@ -3327,8 +3377,8 @@
    /* swapcontext() has races with other threads concurrently executing any
     *               of: itself, getcontext(), makecontext(), or setcontext().
     */
-#  define SWAPCONTEXT_LOCK    GENw_LOCK_
-#  define SWAPCONTEXT_UNLOCK  GENw_UNLOCK_
+#  define SWAPCONTEXT_LOCK    GENx_LOCK_
+#  define SWAPCONTEXT_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef SWPRINTF_LOCK
@@ -3368,8 +3418,8 @@
 
    /* tdelete() has races with other threads concurrently executing any of:
     *           itself, tfind(), or tsearch(). */
-#  define TDELETE_LOCK    GENw_LOCK_
-#  define TDELETE_UNLOCK  GENw_UNLOCK_
+#  define TDELETE_LOCK    GENx_LOCK_
+#  define TDELETE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef TEMPNAM_LOCK
@@ -3383,8 +3433,8 @@
 
    /* tfind() has races with other threads concurrently executing any of:
     *         itself, tdelete(), or tsearch(). */
-#  define TFIND_LOCK    GENw_LOCK_
-#  define TFIND_UNLOCK  GENw_UNLOCK_
+#  define TFIND_LOCK    GENx_LOCK_
+#  define TFIND_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef TIMEGM_LOCK
@@ -3395,6 +3445,15 @@
 #ifndef TIMELOCAL_LOCK
 #  define TIMELOCAL_LOCK    ENVr_LCr_LOCK_(  LC_ALLb_)
 #  define TIMELOCAL_UNLOCK  ENVr_LCr_UNLOCK_(LC_ALLb_)
+#endif
+
+#ifndef TIMEZONE_LOCK
+
+   /* timezone has races with other threads concurrently executing any of:
+    *          itself, ctime(), ctime_r(), daylight(), localtime(),
+    *          localtime_r(), mktime(), strftime(), tzname(), or tzset(). */
+#  define TIMEZONE_LOCK    GENx_LOCK_
+#  define TIMEZONE_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef TMPNAM_LOCK
@@ -3466,8 +3525,8 @@
 
    /* tsearch() has races with other threads concurrently executing any of:
     *           itself, tdelete(), or tfind(). */
-#  define TSEARCH_LOCK    GENw_LOCK_
-#  define TSEARCH_UNLOCK  GENw_UNLOCK_
+#  define TSEARCH_LOCK    GENx_LOCK_
+#  define TSEARCH_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef TTYNAME_LOCK
@@ -3475,8 +3534,8 @@
    /* ttyname() Use ttyname_r() instead
     * ttyname() has races with other threads concurrently executing either
     *           itself or login_tty. */
-#  define TTYNAME_LOCK    GENw_LOCK_
-#  define TTYNAME_UNLOCK  GENw_UNLOCK_
+#  define TTYNAME_LOCK    GENx_LOCK_
+#  define TTYNAME_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef TTYSLOT_LOCK
@@ -3488,8 +3547,8 @@
 
    /* twalk() has races with other threads concurrently executing either
     *         itself or twalk_r. */
-#  define TWALK_LOCK    GENw_LOCK_
-#  define TWALK_UNLOCK  GENw_UNLOCK_
+#  define TWALK_LOCK    GENx_LOCK_
+#  define TWALK_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef TWALK_R_LOCK
@@ -3497,17 +3556,26 @@
    /* twalk_r() GNU extension
     * twalk_r() has races with other threads concurrently executing either
     *           itself or twalk. */
-#  define TWALK_R_LOCK    GENw_LOCK_
-#  define TWALK_R_UNLOCK  GENw_UNLOCK_
+#  define TWALK_R_LOCK    GENx_LOCK_
+#  define TWALK_R_UNLOCK  GENx_UNLOCK_
+#endif
+
+#ifndef TZNAME_LOCK
+
+   /* tzname has races with other threads concurrently executing any of:
+    *        itself, ctime(), ctime_r(), daylight(), localtime(),
+    *        localtime_r(), mktime(), strftime(), timezone(), or tzset(). */
+#  define TZNAME_LOCK    GENx_LOCK_
+#  define TZNAME_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef TZSET_LOCK
 
    /* tzset() has races with other threads concurrently executing any of:
-    *         itself, ctime(), ctime_r(), localtime(), localtime_r(),
-    *         mktime(), or strftime(). */
-#  define TZSET_LOCK    GENw_ENVr_LCr_LOCK_(  LC_ALLb_)
-#  define TZSET_UNLOCK  GENw_ENVr_LCr_UNLOCK_(LC_ALLb_)
+    *         itself, ctime(), ctime_r(), daylight(), localtime(),
+    *         localtime_r(), mktime(), strftime(), timezone(), or tzname(). */
+#  define TZSET_LOCK    GENx_ENVr_LCr_LOCK_(  LC_ALLb_)
+#  define TZSET_UNLOCK  GENx_ENVr_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef UNGETWC_LOCK
@@ -3516,8 +3584,8 @@
 #endif
 
 #ifndef UNSETENV_LOCK
-#  define UNSETENV_LOCK    ENVw_LOCK_
-#  define UNSETENV_UNLOCK  ENVw_UNLOCK_
+#  define UNSETENV_LOCK    ENVx_LOCK_
+#  define UNSETENV_UNLOCK  ENVx_UNLOCK_
 #endif
 
 #ifndef UPDWTMP_LOCK
@@ -3535,8 +3603,8 @@
     *            getutent(), getutid(), getutline(), getutxent(), getutxid(),
     *            getutxline(), glob(), login(), logout(), pututline(),
     *            pututxline(), setutent(), setutxent(), or wordexp(). */
-#  define UTMPNAME_LOCK    GENw_LOCK_
-#  define UTMPNAME_UNLOCK  GENw_UNLOCK_
+#  define UTMPNAME_LOCK    GENx_LOCK_
+#  define UTMPNAME_UNLOCK  GENx_UNLOCK_
 #endif
 
 #ifndef VA_ARG_LOCK
@@ -3758,8 +3826,8 @@
 #endif
 
 #ifndef WCTOMB_LOCK
-#  define WCTOMB_LOCK    GENw_LCr_LOCK_(  LC_CTYPEb_)
-#  define WCTOMB_UNLOCK  GENw_LCr_UNLOCK_(LC_CTYPEb_)
+#  define WCTOMB_LOCK    GENx_LCr_LOCK_(  LC_CTYPEb_)
+#  define WCTOMB_UNLOCK  GENx_LCr_UNLOCK_(LC_CTYPEb_)
 #endif
 
 #ifndef WCTRANS_LOCK
@@ -3785,8 +3853,8 @@
     *           getutent(), getutid(), getutline(), getutxent(), getutxid(),
     *           getutxline(), glob(), login(), logout(), pututline(),
     *           pututxline(), setutent(), setutxent(), or utmpname(). */
-#  define WORDEXP_LOCK    ENVw_LCr_LOCK_(  LC_ALLb_)
-#  define WORDEXP_UNLOCK  ENVw_LCr_UNLOCK_(LC_ALLb_)
+#  define WORDEXP_LOCK    ENVx_LCr_LOCK_(  LC_ALLb_)
+#  define WORDEXP_UNLOCK  ENVx_LCr_UNLOCK_(LC_ALLb_)
 #endif
 
 #ifndef WPRINTF_LOCK
