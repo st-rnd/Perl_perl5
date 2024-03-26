@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+#23456789112345678921234567893123456789412345678951234567896123456789712345678981
 use Data::Dumper;
 $Data::Dumper::Sortkeys = 1;
 
@@ -21,12 +22,16 @@ my $me = 'regen/lock_definitions.pl';
 my $MAX_LINE_WIDTH = 78;
 my $comment_columns = $MAX_LINE_WIDTH - 3;  # For "/* " on first line; " * "
                                             # on subsequent ones
+my %conditionals;   # Accumulated list of functions that require restrictions
+                    # on their input parameters to be thread-safe.
 my %functions;      # Accumulated data for each function in the input
-my %race_tags;      # Accumulated tags for the input 'race:tag' elements
-my @unsuitables;    # Accumulated list of entirely thread-unsafe functions
-my @signal_issues;  # Accumulated list of functions that are affected by signals
-my @need_single_thread_init;    # Accumulated list of functions that need
+my %need_single_thread_init;    # Accumulated list of functions that need
                                 # single-thread initialization
+my %non_functions;  # Accumulated list of non-function inputs
+my %obsoletes;      # Accumulated list of obsolete functions
+my %race_tags;      # Accumulated tags for the input 'race:tag' elements
+my %signal_issues;  # Accumulated list of functions that are affected by signals
+my %unsuitables;    # Accumulated list of entirely thread-unsafe functions
 my $preprocessor = "";   # Preprocessor conditional in effect
 my %categories = ( LC_ALL => 1 );
 
@@ -52,21 +57,13 @@ my @DATA = <DATA>;
 close DATA;
 
 while (defined (my $line = shift @DATA)) {
-    chomp $line;;
-    #XXXZcontinu
-    next if $line =~ /^\s*$/;
-    next if $line =~ m|^\s*//|;
-    last if $line =~ /^__END__/;
-    #print STDERR __FILE__, ": ", __LINE__, ": $line\n";
+    chomp $line;
 
-    if ($line =~ /^#endif/) {
-        $preprocessor = "";
-        next;
-    }
-
-    if ($line =~ / ^ \# (.*) /x) {
-        $preprocessor = "$1";
-        next;
+    while ($line =~ s/ \s* \\ \s* $ //x) {
+        my $continuation .= shift @DATA;
+        chomp $continuation;
+        $continuation =~ s/ ^ \s+ / /x;
+        $line .= $continuation;
     }
 
     my ($functions, $data, $dummy) = split /\s*\|\s*/, $line;
@@ -74,10 +71,27 @@ while (defined (my $line = shift @DATA)) {
 
     # This line has a continuation if the functions list ends in a comma.  All
     # continuations have just the one field.
-    while ($functions =~ / , \s* $/x) {
-        $functions .= shift @DATA;
+    if ($data) {
+        while ($functions =~ / , \s* $/x) {
+            my $continuation = shift @DATA;
+            chomp $continuation;
+            $functions .= $continuation;
+        }
+
+        $line = "$functions|$data";
     }
-    chomp $functions;
+
+    next if $line =~ /^\s*$/;       # Empty
+    next if $line =~ m|^\s*//|;     # Begins with a // comment
+    last if $line =~ /^__END__/;    
+
+    #print STDERR __FILE__, ": ", __LINE__, ": $line\n";
+
+    if ($line =~ / ^ \# (.*) /x) {
+        $preprocessor = "$1";
+        $preprocessor = "" if $preprocessor =~ /^endif/;
+        next;
+    }
 
     # Fields in the data column
     my @categories;
@@ -87,6 +101,8 @@ while (defined (my $line = shift @DATA)) {
     my @notes;
     my %locks;
     my $unsuitable;
+    my $non_function = 0;
+    my $obsolete = 0;
     my $timer = 0;
     my $need_init = 0;
 
@@ -95,9 +111,19 @@ while (defined (my $line = shift @DATA)) {
     while ($data =~ /\S/) {
         $data =~ s/^\s+//;
         $data =~ s/\s+$//;
+            
+        if ($data =~ s| // \s* ( .* ) $ ||x) {
+            push @notes, "$1";
+            next;
+        }
 
         if ($data =~ s/ ^ U \b //x) {
             $unsuitable = "";
+            next;
+        }
+
+        if ($data =~ s/ ^ [MV] \b //x) {
+            $non_function = 1;
             next;
         }
 
@@ -152,8 +178,8 @@ while (defined (my $line = shift @DATA)) {
 
         if ($data =~ s/ ^ const: ( \S+ ) //x) {
             croak("lock type redefined:" . $line)
-                                             if $locks{$1} && $locks{$1} ne 'w';
-            $locks{$1} = 'w';
+                                             if $locks{$1} && $locks{$1} ne 'x';
+            $locks{$1} = 'x';
             next;
         }
 
@@ -164,9 +190,20 @@ while (defined (my $line = shift @DATA)) {
             next;
         }
 
-        if ($data =~ s| ^ // \s* ( .* ) $ ||x) {
-            push @notes, "$1";
-            last;
+        # The preferred functions (if any) follow the 'O'
+        if ($data =~ s/ O( [,\w]* ) //x) {
+            my @list = map { $_ .= "()" } split ",", $1;
+            my $note = "Obsolete";
+            if (@list) {
+                $list[-1] = "or $list[-1]" if @list > 1;
+                $note .= "; use " . join ", ", @list;
+                $note =~ s/,// if @list == 2;
+            }
+            $note .= " instead";
+
+            unshift @notes, $note;
+
+            $obsolete = 1;
         }
 
         croak("Unexpected input '$data'") if $data =~ /\S/;
@@ -195,17 +232,29 @@ while (defined (my $line = shift @DATA)) {
         $entry{preprocessor} = $preprocessor;
         push $entry{categories}->@*, @categories if @categories;
         push $entry{races}->@*, @races if @races;
-        push $entry{conditions}->@*, @conditions if @conditions;
+        if (@conditions) {
+            push $entry{conditions}->@*, @conditions;
+            $conditionals{$function} = 1;
+        }
         if (@signals) {
             push $entry{signals}->@*, @signals;
-            push @signal_issues, $function;
+            $signal_issues{$function} = 1;
         }
         $entry{locks}{$_} = $locks{$_} for keys %locks;
-        push @need_single_thread_init, $function if $need_init;
+        $need_single_thread_init{$function} = 1 if $need_init;
         push $entry{notes}->@*, @notes if @notes;
         if (defined $unsuitable) {
             $entry{unsuitable} = 1;
-            push @unsuitables, $function;
+            $unsuitables{$function} = 1;
+        }
+
+        if ($obsolete) {
+            $obsoletes{$function} = 1;
+        }
+
+        if ($non_function) {
+            $entry{non_function} = 1;
+            $non_functions{$function} = 1;
         }
             
         if (@races > 1 || (@races && $races[0] ne "")) {
@@ -230,30 +279,50 @@ sub output_list_with_heading {
 }
 
 output_list_with_heading([ keys %functions ], <<EOT
-/* This file contains macros to wrap their respective function calls to ensure
- * that those calls are thread-safe in a multi-threaded environment.
+/* This file contains macros to wrap their respective libc accesses to ensure
+ * that those accesses are thread-safe in a multi-threaded environment.
  *
- * Most libc functions are already thread-safe without these wrappers, so do
- * not appear here.  The functions that are known to have multi-thread issues
- * are:
+ * Accesses are mostly function calls but there are a few macros and variables
+ * as well.  Most accesses are already thread-safe without these wrappers, so
+ * do not appear here.  The accesses that are known to have multi-thread
+ * issues are:
  *
 EOT
 );
 
-output_list_with_heading(\@unsuitables, <<EOT
+output_list_with_heading([ keys %non_functions ], <<EOT
  *
- * If a function doesn't appear in the above list, perl thinks it is
+ * If an access doesn't appear in the above list, perl thinks it is
  * thread-safe on all platforms.  If your experience is otherwise, add an
- * entry in the DATA portion of this file.
+ * entry in the DATA portion of $me.
  *
- * A few calls are considered totally unsuited for use in a multi-thread
- * environment.  No wrapper macros are generated for these, which must be
- * called only during single-thread operation:
+ * All the accesses listed above are function calls, except for these:
  *
 EOT
 );
 
-output_list_with_heading(\@need_single_thread_init, <<EOT
+output_list_with_heading([ keys %obsoletes ], <<EOT
+ *
+ * A few functions are considered obsolete, and should not be used, at least
+ * in new code.  These are:
+ *
+EOT
+);
+
+output_list_with_heading([ keys %unsuitables ], <<EOT
+ *
+ * Comments at their respective macro definitions below give any preferred
+ * alternatives.
+ *
+ * A few functions are considered totally unsuited for use in a multi-thread
+ * environment.  These must be called only during single-thread operation,
+ * hence no UNLOCK wrapper macro is generated for these, and the generated
+ * LOCK macro is designed to give a compilation error.
+ *
+EOT
+);
+
+output_list_with_heading([ keys %need_single_thread_init, ], <<EOT
  *
  * Some functions perform initialization on their first call that must be done
  * while still in a single-thread environment, but subsequent calls are
@@ -266,45 +335,59 @@ EOT
 
 print $l <<EOT;
  *
- * Some functions use and/or modify a global state, such as a database.
+ * Some libc functions use and/or modify a global state, such as a database.
  * The libc functions presume that there is only one thread at a time
  * operating on that database.  Unpredictable results occur if more than one
  * does, even if the database is not changed.  For example, typically there is
- * a global iterator for the data base maintained by libc, so that each new
- * read from any thread advances it, meaning that no thread will see all the
- * entries.  The only way to make these thread-safe is to have an exclusive
- * lock on a mutex from the open call to the close.  This is beyond the
- * current scope of this header.  You are advised to not use such databases
- * from more than one thread at a time.  The lock macros here only are
- * designed to make the individual function calls thread-safe just for the
- * duration of the call.  Comments at each definition tell what other
+ * a global iterator for such a data base and that iterator is maintained by
+ * libc, so that each new read from any thread advances it, meaning that no
+ * thread will see all the entries.  The only way to make these thread-safe is
+ * to have an exclusive lock on a mutex from the open call to the close.  This
+ * is beyond the current scope of this header.  You are advised to not use
+ * such databases from more than one thread at a time.  The LOCK macros here
+ * only are designed to make the individual function calls thread-safe just
+ * for the duration of the call.  Comments at each definition tell what other
  * functions have races with that function.  Typically the functions that fall
  * into this class have races with other functions whose names begin with
- * "end", such as "endgrent()".  Other examples include pseudo-random number
- * generators.  Some libc implementations of 'rand()', for example, may share
- * the data across threads; and others may have per-thread data.  The shared
- * ones will have unreproducible results, as the threads vary in their
- * timings and interactions.  This may be what you want; or it may not be.
- * (This particular function may be removed from the POSIX Standard because of
- * these issues.)
+ * "end", such as "endgrent()".
  *
- * Other functions that output to a stream also are considered thread-unsafe
- * without locking.  but the typical consequences are just that the data is
- * output in unpredictable ways, which may be totally acceptable.  However, it
- * is beyond the scope of these macros to make sure that formatted output uses
- * a non-dot radix decimal point.  Use the WITH_LC_NUMERIC_SET_TO_NEEDED()
- * macro #defined in perl.h to accomplish this.
+ * Other examples of functions that use a global state include pseudo-random
+ * number generators.  Some libc implementations of 'rand()', for example, may
+ * share the data across threads; and others may have per-thread data.  The
+ * shared ones will have unreproducible results, as the threads vary in their
+ * timings and interactions.  This may be what you want; or it may not be.
+ * (This particular function is a candidate to be removed from the POSIX
+ * Standard because of these issues.)
+ *
+ * When one thread does a chdir(2), it affects the whole process, and any libc
+ * call that is expecting a stable working directory will be adversely
+ * affected.  The man pages only list one such call, the obsolete nftw().
+ * But there may be other issues lurking.
+ *
+ * Functions that output to a stream also are considered thread-unsafe when
+ * locking is not done.  But the typical consequences are just that the data
+ * is output in unpredictable ways, which may be totally acceptable.  However,
+ * it is beyond the scope of these macros to make sure that formatted output
+ * uses a non-dot radix decimal point.  Use the
+ * WITH_LC_NUMERIC_SET_TO_NEEDED() macro documented in perlapi to accomplish
+ * this.
  *
  * The rest of the functions, when wrapped with their respective LOCK and
  * UNLOCK macros, should be thread-safe.
+EOT
+output_list_with_heading([ keys %conditionals ], <<EOT
  *
  * However, some of these are not thread-safe if called with arguments that
- * don't comply with certain (easily-met) restrictions.  Those are commented
- * where their respective macros are #defined.  The macros assume that the
- * function is called with the appropriate restrictions.
+ * don't comply with certain (easily-met) restrictions.  These are:
+ *
 EOT
+);
 
-output_list_with_heading(\@signal_issues, <<EOT
+output_list_with_heading([ keys %signal_issues ], <<EOT
+ *
+ * The details on each restriction are documented below where their respective
+ * macros are #defined.  The macros assume that the function is called with
+ * the appropriate restrictions.
  *
  * The macros here do not help in coping with asynchronous signals.  For
  * these, you need to see the vendor man pages.  The functions here known to
@@ -319,20 +402,19 @@ print $l <<EOT;
  * has signal issues.
  *
  * In theory, you should wrap every instance of every function listed here
- * with its corresponding lock macros, except as noted above.  The macros here
- * all should expand to no-ops when run from an unthreaded perl.  Many also
- * expand to no-ops on various other platforms and Configurations.  They exist
- * so you you don't have to worry about this.  Some definitions are no-ops in
- * all current cases, but you should wrap their functions anyway, as future
- * work likely will yield Configurations where they aren't just no-ops.
+ * with its corresponding LOCK/UNLOCK macros, except as noted above.  The
+ * macros here all should expand to no-ops when run from an unthreaded perl.
+ * Many also expand to no-ops on various other platforms and Configurations.
+ * They exist so you you don't have to worry about this.  Some definitions are
+ * no-ops in all current cases, but you should wrap their functions anyway, as
+ * future work likely will yield Configurations where they aren't just no-ops.
  *
  * You may override any definitions here simply by #defining your own before
- * #including this file.
+ * #including this file (which likely means before #including perl.h).
  *
- * The macros are designed to not result in deadlock, but best practice is to
- * call the LOCK macro; call the function and copy the result to a per-thread
- * place if that result points to a buffer internal to libc; then UNLOCK it
- * immediately.  Then act on the result.
+ * Best practice is to call the LOCK macro; call the function and copy the
+ * result to a per-thread place if that result points to a buffer internal to
+ * libc; then UNLOCK it immediately.  After that, you can act on the result.
  *
  * The macros here are generated from an internal DATA section in
  * $me, populated from information derived from the
@@ -341,13 +423,33 @@ print $l <<EOT;
  * typically more detailed than the Standard, and other vendors, who may also
  * have the same restrictions, but just don't document them.) The data can
  * easily be adjusted as necessary.
+ *
+ * The macros generated here expand to other macro calls that are expected to
+ * be #defined in perl.h, depending on the platform and Configuration.  Many
+ * of the thread vulnerabilities involve the program's environment and locale,
+ * so perl has separate mutexes for each of those two types of access.  There
+ * are a few others, all rare or obsolete.   There are also many races, where
+ * certain functions concurrently executing in different threads can interfere
+ * with each other unpredictably.  This header file currently lumps all races
+ * and non-environment/locale vulnerabilities into a third, generic, mutex.
+ * So the macro names are various combinations of the three mutexes, and
+ * whether the lock needs to be exclusive (suffix "x" in the mutex name) or
+ * non-exclusive (suffix "r" for read-only).  GEN means the generic mutex; ENV
+ * the environment one; and LC the locale one.
+ *
+ * The lumping into the single generic mutex is due to the expectation that
+ * such calls are infrequent enough that having a single mutex for all won't
+ * noticeably affect performance, and that the more mutexes you have, the more
+ * likely deadlock can occur.  Individual cases could be separated into
+ * separate mutexes if necessary.  perl.h takes further steps in the expansion
+ * of these macros to avoid deadlock altogether.
  */
 EOT
 
-# But beware that the Standard contains weasel words that could make
-# multi-thread safety a fiction, depending on the application.  Our
-# experience though is that libc implementations don't take advantage of this
-# loophole, and the macros here are written as if it didn't exist.  (See
+# Beware that the Standard contains weasel words that could make multi-thread
+# safety a fiction, depending on the application.  Our experience though is
+# that libc implementations don't take advantage of this loophole, and the
+# macros here are written as if it didn't exist.  (See
 # https://stackoverflow.com/questions/78056645 )  The actual text is:
 #
 #    A thread-safe function can be safely invoked concurrently with other
@@ -371,20 +473,19 @@ EOT
 # increases the possibility of deadlock, unless the code is carefully
 # crafted (and remains so during future maintenance).
 #
-# Many of the functions here have issues with either the locale or environment
-# changing while they are executing.  They thus need a read-lock on one or
-# both of those cases.  There are some functions that would need a lock on
-# something else.  These all are collapsed to a virtual mutex, GEN for generic.
-# In order to prevent the possibility of deadlock, the code in perl.h
-# collapses that mutex into one or the other of the real two.
-#
-# Some functions here instead have races with themselves or other related
-# ones.  These also are lumped together into using the generic mutex.
 
 #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper \%functions;#, \%race_tags;
 
+# The locale macros take a mask parameter with each affected category having a
+# bit set in it.  The mask for LC_ALL is the same across all platforms.
 print $l <<~EOT;
     #define LC_ALLb_  LC_INDEX_TO_BIT_(LC_ALL_INDEX_)
+    EOT
+
+# On platforms where the locale for a given category must be matched by the
+# LC_CTYPE locale to avoid potential mojibake, set things up to also
+# automatically include the LC_CTYPE bit.
+print $l <<~EOT;
 
     #if defined(LC_CTYPE) && defined(PERL_MUST_DEAL_WITH_MISMATCHED_CTYPE)
     #  define INCLUDE_CTYPE_  LC_INDEX_TO_BIT_(LC_CTYPE_INDEX_)
@@ -393,6 +494,7 @@ print $l <<~EOT;
     #endif
     EOT
 
+# Create the mask for each category found in the DATA
 foreach my $cat (sort keys %categories) {
     next if $cat eq "LC_ALL";
     print $l <<~EOT;
@@ -404,20 +506,24 @@ foreach my $cat (sort keys %categories) {
       EOT
 }
 
-# XXX
+# Output the computed results for each function in the DATA
 foreach my $function (sort name_order keys %functions) {
 
-#print STDERR __FILE__, ": ", __LINE__, ": ", Dumper $function, $functions{$function}->{entries};
+    #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper $function, $functions{$function}->{entries};
 
     my $FUNC = uc $function;
     print $l "\n#ifndef ${FUNC}_LOCK\n";
 
+    # If this function has at least one version that depends on a preprocessor
+    # directive, and there isn't an #else one, automatically add one which
+    # will expand to no-ops.
     if (   $functions{$function}{entries}[0]{preprocessor} ne ""
         && $functions{$function}{entries}[-1]{preprocessor} ne 'else')
     {
         push $functions{$function}->{entries}->@*, { preprocessor => 'else' };
     }
 
+    # For each possibility for this function ...
     foreach my $entry ($functions{$function}->{entries}->@*) {
         my @comments;
         #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper $function, $entry;
@@ -430,17 +536,16 @@ foreach my $function (sort name_order keys %functions) {
         }
 
         my $columns = $comment_columns - length $dindent;
-        my $output_function_name = "$function() ";
+        my $output_function_name = $function;
+
+        # Non-functions don't get "()"
+        $output_function_name .= "()" unless $entry->{non_function};
+
+        $output_function_name .= " ";
+
         my $hanging = " " x length $output_function_name;   # indentation
 
-
         # First accumulate all the comments for this entry
-        if (0 && $entry->{unsuitable}) {
-            my $text = "${output_function_name}is unsuitable for a multi-threaded"
-                    . " environment.";
-            push @comments, split "\n", wrap($columns, "", $hanging, $text);
-        }
-
         if ($entry->{notes}) {
             foreach my $note ($entry->{notes}->@*) {
                 push @comments, split "\n", wrap($columns, "", $hanging,
@@ -469,7 +574,7 @@ foreach my $function (sort name_order keys %functions) {
             if (keys %races_with) {
                 my $race_text =
                     "${output_function_name}has races with other threads"
-                . " concurrently executing";
+                  . " concurrently executing";
                 my @race_names = sort name_order keys %races_with;
                 if (@race_names == 1) {
                     $race_text .= " either itself or " . $race_names[0];
@@ -497,33 +602,31 @@ foreach my $function (sort name_order keys %functions) {
                 print $l "\n $dindent * ", $comments[$i];
             }
 
-            if (length($comments[-1]) + length($dindent) + 3 <= $comment_columns) {
+            if (length($comments[-1]) + length($dindent) + 3
+                                                           <= $comment_columns)
+            {   # End the comment with a trailing "*/" if it fits on the line
                 print $l " */\n";
             }
-            else {
+            else {  # Otherwise, put it on the next line
                 print $l "\n $dindent */\n";
             }
         }
 
         # Now calculate and output the wrapper macros.
-        my $need_exclusive = 0;
-        if ($entry->{races}) {
-            $need_exclusive = 1;
-        }
+        my $need_exclusive = $entry->{races};
 
         if ($entry->{unsuitable}) {
             croak("Unsuitable function '$function' has a lock")
                                 if $entry->{locks} || $entry->{categories};
-            #print $l "/*#${dindent}define ${FUNC}_LOCK  assert(0)*/\n";
             print $l <<~EOT;
                 #${dindent}define ${FUNC}_LOCK                              \\
-                #${dindent}  error $function not suitable for multi-threaded operation
+                #${dindent}  error_${function}_not_suitable_for_multi-threaded_operation
                 EOT
         }
         elsif (! $entry->{locks} && ! $entry->{races} && ! $entry->{categories})
         {
 
-            # No race, no lock, no op.
+            # No race, no lock => no op.
             print $l <<~EOT;
                 #${dindent}define ${FUNC}_LOCK    NOOP
                 #${dindent}define ${FUNC}_UNLOCK  NOOP
@@ -540,19 +643,19 @@ foreach my $function (sort name_order keys %functions) {
             # These are the other locks in the data.  Anything else is to catch
             # typos when someone makes a change to it.
             #
-            # The ones marked 'w' override any input 'r' values.  These are
-            # because the man pages are incomplete or inconsistent.  There should
-            # be something that is a 'const:cwd' that locks cwd for write-only
-            # access.  But there isn't, so have to assume that many other
-            # functions could be doing this.
+            # The ones marked 'x' override any input 'r' values.  These are
+            # because the man pages are incomplete or inconsistent.  There
+            # should be something that is a 'const:term' that locks term for
+            # write-only access.  But there isn't, so have to assume that an
+            # exclusive lock is needed.
             my %known_locks = (
-                                _generic     => 'r',
                                 hostid       => 'r',
-                                term         => 'w',
-                                cwd          => 'w',
+                                term         => 'x',    # Obsolete
+                                cwd          => 'x',    # Vulnerable to a
+                                                        # chdir() call,
                                 sigintr      => 'r',
-                                mallopt      => 'w',
-                                malloc_hooks => 'w',
+                                mallopt      => 'r',
+                                malloc_hooks => 'r',
                             );
 
             # This loop maps the rest of the locks into just the generic one
@@ -566,19 +669,18 @@ foreach my $function (sort name_order keys %functions) {
 
                 # Can't get any more restrictive than this, so skip further
                 # checking
-                next if $generic_lock eq 'w';
+                next if $generic_lock eq 'x';
                 $generic_lock = $entry->{locks}{$key};
             }
 
-            croak("Unknown lock: " . Dumper (\@unknown_locks)) if @unknown_locks;
+            croak("Unknown lock: " . Dumper (\@unknown_locks))
+                                                             if @unknown_locks;
 
-            # If we need a write-lock, Look through the three locks, for one
-            # that already has a write lock.  If so, we don't need to force
-            # one
-            my $has_write_lock = 0;
+            # If we need an exclusive lock, Look through the three locks for
+            # one that already has an exclusive lock.  If so, we don't need to
+            # force one
             for my $ref (\$locale_lock, \$env_lock, \$generic_lock) {
-                if ($$ref eq 'w') {
-                    $has_write_lock = 1;
+                if ($$ref eq 'x') {
                     $need_exclusive = 0;
                     last;
                 }
@@ -586,22 +688,7 @@ foreach my $function (sort name_order keys %functions) {
 
             # If there were no locks at all, but we still need an exclusive
             # lock, change the generic one to be one.
-            if ($need_exclusive) {
-                $generic_lock = 'w';
-            }
-
-            # To prevent deadlock, if the locale lock is exclusive, and there
-            # is no env lock, add a generic read-lock, as explained in the
-            # comments in perl.h.  As in the comments this script generates,
-            # we presume that the user code is written so that any env
-            # exclusive lock is held only surrounding a single function call.
-            # Otherwise, the generic lock would have to be added for an env
-            # write as well.  Note that there is no libc call (nor likely to
-            # ever be one added) that changes both locale and env.
-            # XXX
-            $generic_lock = 'r' if $generic_lock eq ""
-                                && $env_lock eq ""
-                                && $locale_lock eq "w";
+            $generic_lock = 'x' if $need_exclusive;
 
             $env_lock = 'ENV' . $env_lock if $env_lock;
             $generic_lock = 'GEN' . $generic_lock if $generic_lock;
@@ -655,51 +742,60 @@ if (%functions) {
     croak("These functions unhandled: " . join ", ", keys %functions);
 }
 
-# Below is the DATA section.  There are 6 types of lines:
+# Below is the DATA section.  There are 5 types of lines:
 #
-#   1)  A line beginning with the string " __END__" indicates it and anything
-#       past it to the end of the file are ignored.
-#   2)  entirely blank lines are ignored
-#   3)  lines whose first non-blanks are the string "//" are also ignored
-#   4)  lines beginning with the character '#' are treated as C preprocessor
-#       lines, and output as-is, as part of the generated macro definitions.
-#   5) and 6)  two types of data lines, described below.
+#   1)  data lines, arranged like a table, with two columns, separated by a
+#       pipe '|'.  The syntax is designed to be very similar to the ATTRIBUTES
+#       section of the Linux man pages the data is derived from.  This allows
+#       copy-pasting from those to here, with minimal changes, mostly
+#       deletions.  There may be continuation lines for these, as described
+#       below, none of which have a pipe character.
+#   2)  a non-continuation line beginning with the string " __END__" indicates
+#       it and anything past it to the end of the file are ignored.
+#   2)  non-continuation, entirely blank lines are ignored
+#   3)  non-continuation lines whose first non-blanks are the string "//" are
+#       also ignored
+#   4)  non-continuation lines beginning with the character '#' are treated as
+#       C preprocessor lines, and output as-is, as part of the generated macro
+#       definitions.
 #
-# The data lines are arranged like a table, with two columns, separated by a
-# pipe '|'.  The syntax is designed to be very similar to the ATTRIBUTES
-# section of the Linux man pages the data is derived from.  This allows
-# copy-pasting from those to here, with minimal changes, mostly deletions.
-#
-# The first column gives the functions that the second column applies to.  The
-# functions are comma-separated, and if the final non-space character in the
-# column is a comma, the next line continues the function list.
-#
-# Continuation lines are the second type of data line.  Only a single column
-# is permitted, consisting of comma separated function names.  The final
-# function name in the list being followed by a comma indicates that the line
-# is continued to the next line.  Together the first line and its continuation
-# lines form a group of functions that the data in the second column of the
-# first line applies to
+# The first column of a data line gives the functions that the second column
+# applies to.  The functions are comma-separated.  See below for how this
+# column can have continuation lines.
 #
 # The other column gives the data, again in the form of the Linux man pages.
-# It applies to each function in the function list, however many lines that
-# that list spans.
+# It applies to each function in the function list.  There are as many
+# blank-separated fields as necessary in the second column.  If the final
+# non-blank characters on the line are the character '\', the next input line
+# is a continuation of the data column, for as many such lines as end in '\'.
+# The following fields (appearing in any order, almost) are recognized:
 #
-# There are as many blank-separated fields as necessary in the second column,
-# but the data must be on just a single line (this could be generalized should
-# it become desirable to do so).  The fields may appear in any order.
-# The following fields are recognized:
+#   a)  Simply the character 'U'.  This indicates that the functions in the
+#       list are thread-unsafe, and therefore should not be used in
+#       multi-thread mode.  The presence of this field precludes any other
+#       field but comment ones.
 #
-#   a)  Simply the character 'U'.  This indicates that this function is
-#       thread-unsafe, and therefore should not be used in multi-thread mode.
-#       The presence of this field precludes any other field but comment ones.
+#   b)  The character 'M' means that the items in the list aren't functions,
+#       but macros.  The only current practical effect of this field is that
+#       each item is listed in the generated comments as not being a function.
 #
-#   b)  The string "init".  This means that the function is unsafe the first
-#       time it is called, but after that can be made thread-safe by following
-#       the dictates of any remaining fields.  Hence these functions must be
-#       called at least once during single-thread startup.
+#   c)  The character 'V' means that the items in the list aren't functions,
+#       but variables.  The only current practical effect of this field is
+#       that each item is listed in the generated comments as not being a
+#       function.
 #
-#   c)  The string "sig:" followed by the name of a signal.  For example
+#   d)  The character 'O' followed by a comma-separated list of function
+#       names.  This means that the functions in the list are considered
+#       obsolete, and something from the comma-separated list should be used
+#       instead.
+#
+#   e)  The string "init".  This means that the functions in the list are
+#       unsafe the first time they are called, but after that can be made
+#       thread-safe by following the dictates of any remaining fields.  Hence
+#       these functions must be called at least once during single-thread
+#       startup.
+#
+#   f)  The string "sig:" followed by the name of a signal.  For example
 #       "sig:ALRM".  This means the functions are vulnerable to the SIGALRM
 #       signal.  A list of all such functions is output in the comments at the
 #       top of the generated header file, and individually at the point of the
@@ -707,11 +803,11 @@ if (%functions) {
 #       scope of this to automatically protect against these.  You'll have to
 #       figure it out on your own.
 #
-#   d)  The string "timer".  This appears to be obsolete, with sig:ALRM taking
+#   g)  The string "timer".  This appears to be obsolete, with sig:ALRM taking
 #       over its meaning.  The code here simply verifies that this string
 #       doesn't appear without also "sig:ALRM"
 #
-#   e)  Any other string of \w characters, none uppercase.  For example,
+#   h)  Any other string of \w characters, none uppercase.  For example,
 #       "env".  Each function whose data line contains this field
 #       non-atomically reads shared data of the same ilk.  So, in this case,
 #       "env" means that these functions read from data associated with
@@ -722,19 +818,19 @@ if (%functions) {
 #       protected by a read-lock associated with the tag, so that no function
 #       that writes to that data can be concurrently executing.
 #
-#   f)  The string "const:" followed by a tag word (\w+).  This means that the
+#   i)  The string "const:" followed by a tag word (\w+).  This means that the
 #       affected functions write to shared data associated with the tag.
 #
 #       The implication is that these functions need to each have an
 #       exclusive lock associated with the tag, to avoid interference with
-#       other such functions, or the functions in e) that have the same tag.
+#       other such functions, or the functions in h) that have the same tag.
 #       Continuing the previous example, the function putenv() has
 #       "const:env".  This means it needs an exclusive lock on the mutex
 #       associated with "env", and all functions that contain just "env" for
 #       their data need read-locks on that mutex.
 #
-#   g)  The string "race".  This means that these functions each has a
-#       potential race with something running in another thread.  If "race"
+#   j)  The string "race".  This means that these each of these functions has
+#       a potential race with something running in another thread.  If "race"
 #       appears alone, what the other thing(s) that can interfere with it are
 #       unspecified, but the generated header takes it as meaning the function
 #       only has a race with another instance of it.  This could be because of
@@ -742,9 +838,9 @@ if (%functions) {
 #       to internal global static storage, which must be used while still
 #       locked, or copied to a per-thread safe place for later use.
 #
-#       "race" may be followed by a colon and a tag word, like so
-#       "race:tmpbuf".  The potential race is with any other functions that
-#       also specify a race with the same tag word.
+#       "race" may be followed by a colon and a tag word, like "race:tmpbuf".
+#       The potential race is with any other functions that also specify a
+#       race with the same tag word.
 #
 #       The implication is that each such function must be protected with an
 #       exclusive mutex associated with that tag, so none can run
@@ -759,13 +855,20 @@ if (%functions) {
 #       so that "ps" is non-NULL, and remove this cause of unsafety.  The
 #       generated macros assume that you do so.
 #
-#   h)  A string giving a locale category, like "LC_TIME".  This indicates
+#   k)  A string giving a locale category, like "LC_TIME".  This indicates
 #       what locale category affects the execution of this function.  Multiple
 #       ones may be specified.  These are for future use. XXX
 #
-#   i)  The string "//".  This must be the final field on the line, and
+#   l)  The string "//".  This must be the final field on the line, and
 #       the rest of the line becomes a comment string that is to be output
-#       just above the generated macros for each affected function.
+#       just above the generated macros for each affected function.  Any
+#       continuation lines continue this comment.
+#
+# There is another type of continuation line.  If the last non-blank character
+# in the functions column is a comma, there are more functions to come.  These
+# come on the lines immediately following any data column continuation lines.
+# These lines are simply more comma-separated function names.  The final line
+# doesn't end in a comma.
 #
 # The #endif preprocessor line marks the end of the functions affected by
 # previous preprocessor lines.  If there was no "#else" line, macros expanding
@@ -774,8 +877,8 @@ if (%functions) {
 __DATA__
 addmntent  	| race:stream locale
 alphasort, versionsort| locale
-asctime  	| race:asctime locale  // Obsolete, use Perl_sv_strftime_tm() instead
-asctime_r  	| locale  // Obsolete, use Perl_sv_strftime_tm() instead
+asctime  	| race:asctime locale  OPerl_sv_strftime_tm
+asctime_r  	| locale OPerl_sv_strftime_tm
 asprintf  	| locale
 atof  	        | locale
 atoi, atol, atoll| locale LC_NUMERIC
@@ -789,7 +892,10 @@ catgets         | race
 
 catopen  	| env LC_MESSAGES
 clearenv  	| const:env
-clearerr_unlocked,| race:stream  // Is thread-safe if flockfile() or ftrylockfile() have locked the stream, but should not be used since not standardized and not widely implemented
+clearerr_unlocked,| race:stream                                             \
+                    // Is thread-safe if flockfile() or ftrylockfile() have \
+                       locked the stream, but should not be used since not  \
+                       standardized and not widely implemented
 fflush_unlocked,
 fgetc_unlocked,
 fgets_unlocked,
@@ -811,8 +917,9 @@ crypt       	| race:crypt
 ctermid         | race:ctermid/!s
 #endif
 
-ctime_r  	| race:tzset env locale LC_TIME // Obsolete, use Perl_sv_strftime_ints() instead
-ctime       	| race:tmbuf race:asctime race:tzset env locale LC_TIME // Obsolete, use Perl_sv_strftime_ints() instead
+ctime_r  	| race:tzset env locale LC_TIME OPerl_sv_strftime_ints
+ctime       	| race:tmbuf race:asctime race:tzset env locale LC_TIME     \
+                  OPerl_sv_strftime_ints
 cuserid  	| race:cuserid/!string locale
 
 dbm_clearerr,   | race
@@ -847,7 +954,7 @@ nrand48_r,
 seed48_r,
 srand48_r
 
-ecvt        	| race:ecvt  // Obsolete, use snprintf() instead
+ecvt        	| race:ecvt Osnprintf
 
 encrypt, setkey | race:crypt
 endaliasent  	| locale
@@ -885,7 +992,7 @@ getttyent,
 getttynam,
 setttyent
 endusershell  	| U
-endutent        | race:utent  // Obsolete; use endutxent() instead
+endutent        | race:utent Oendutxent
 endutxent       | race:utent
 err  	        | locale
 error_at_line  	| race:error_at_line/error_one_per_line locale
@@ -905,7 +1012,7 @@ __fsetlocking
 __fpurge        | race:stream  // Not in POSIX Standard and not portable
 
 fcloseall  	| race:streams
-fcvt        	| race:fcvt  // Obsolete, use snprintf() instead
+fcvt        	| race:fcvt Osnprintf
 fgetgrent  	| race:fgetgrent
 fgetpwent  	| race:fgetpwent
 fgetspent  	| race:fgetspent
@@ -931,8 +1038,10 @@ getaliasbyname_r| locale
 getaliasbyname  | U
 getaliasent_r  	| locale
 getaliasent  	| U
-getc_unlocked   | race:stream  // Is thread-safe if flockfile() or ftrylockfile() have locked the stream
-getchar_unlocked| race:stdin  // Is thread-safe if flockfile() or ftrylockfile() have locked stdin
+getc_unlocked   | race:stream  // Is thread-safe if flockfile() or      \
+                                  ftrylockfile() have locked the stream
+getchar_unlocked| race:stdin  // Is thread-safe if flockfile() or       \
+                                 ftrylockfile() have locked stdin
 
 getcontext, setcontext| race:ucp
 
@@ -967,11 +1076,13 @@ getgrnam  	| race:grnam locale
 getgrnam_r  	| locale
 getgrouplist  	| locale
 gethostbyaddr_r | env locale
-gethostbyaddr  	| race:hostbyaddr env locale  // Obsolete; use getaddrinfo(); return needs a deep copy for safety instead
+gethostbyaddr  	| race:hostbyaddr env locale Ogetaddrinfo                   \
+                  // return needs a deep copy for safety
 gethostbyname2_r| env locale
 gethostbyname2  | race:hostbyname2 env locale
 gethostbyname_r | env locale
-gethostbyname  	| race:hostbyname env locale  // Obsolete; use getnameinfo() instead; return needs a deep copy for safety
+gethostbyname  	| race:hostbyname env locale Ogetnameinfo                   \
+                  // return needs a deep copy for safety
 gethostent      | race:hostent race:hostentbuf env locale
 gethostid  	| hostid env locale
 getlogin  	| race:getlogin race:utent sig:ALRM timer locale
@@ -1004,7 +1115,7 @@ getprotoent_r  	| locale
 getprotoent  	| race:protoent race:protoentbuf locale
 getpwent  	| race:pwent race:pwentbuf locale
 getpwent_r  	| race:pwent locale
-getpw       	| locale  // Obsolete; use getpwuid() instead
+getpw       	| locale Ogetpwuid
 getpwnam_r  	| locale
 getpwnam  	| race:pwnam locale
 getpwuid_r  	| locale
@@ -1026,14 +1137,17 @@ getspent  	| race:getspent race:spentbuf locale
 getspnam  	| race:getspnam locale
 getspnam_r  	| locale
 getusershell  	| U
-getutent        | init race:utent race:utentbuf sig:ALRM timer  // Obsolete; use getutxent() instead
+getutent        | init race:utent race:utentbuf sig:ALRM timer Ogetutxent
 getutxent       | init race:utent race:utentbuf sig:ALRM timer
 getutid         | init race:utent sig:ALRM timer
 getutxid        | init race:utent sig:ALRM timer
-getutline  	| init race:utent sig:ALRM timer  // Obsolete; use getutxline() instead
+getutline  	| init race:utent sig:ALRM timer Ogetutxline
 getutxline  	| init race:utent sig:ALRM timer
 getwchar        | LC_CTYPE
-getwchar_unlocked| race:stdin  // Is thread-safe if flockfile() or ftrylockfile() have locked stdin, but should not be used since not standardized and not widely implemented
+getwchar_unlocked| race:stdin                                               \
+                    // Is thread-safe if flockfile() or ftrylockfile()      \
+                       have locked stdin, but should not be used since not  \
+                       standardized and not widely implemented
 
 glob  	        | race:utent env sig:ALRM timer locale LC_COLLATE
 gmtime_r  	| env locale
@@ -1070,7 +1184,9 @@ iruserok_af  	| locale
 iruserok  	| locale
 isalpha         | LC_CTYPE  // Use a Perl isALPHA family macro instead
 isalnum         | LC_CTYPE  // Use a Perl isALNUM family macro instead
-isascii         | LC_CTYPE  // Considered obsolete as being non-portable by POSIX, but Perl makes it portable by using an isASCII family macro
+isascii         | LC_CTYPE  // Considered obsolete as being non-portable    \
+                               by POSIX, but Perl makes it portable by using\
+                               an isASCII family macro
 isblank         | LC_CTYPE  // Use a Perl isBLANK family macro instead
 iscntrl         | LC_CTYPE  // Use a Perl isCNTRL family macro instead
 isdigit         | LC_CTYPE  // Use a Perl isDIGIT family macro instead
@@ -1112,7 +1228,8 @@ iswspace_l, iswupper_l,
 iswxdigit_l
 
 l64a  	        | race:l64a
-localeconv  	| race:localeconv locale LC_NUMERIC LC_MONETARY  // Use Perl_localeconv() instead
+localeconv  	| race:localeconv locale LC_NUMERIC LC_MONETARY             \
+                  // Use Perl_localeconv() instead
 localtime       | race:tmbuf race:tzset env locale
 localtime_r  	| race:tzset env locale
 login, logout  	| race:utent sig:ALRM timer  // Not in POSIX Standard
@@ -1120,7 +1237,7 @@ login_tty  	| race:ttyname
 logwtmp  	| sig:ALRM timer  // Not in POSIX Standard
 makecontext     | race:ucp
 mallinfo  	| init const:mallopt
-MB_CUR_MAX      | LC_CTYPE
+MB_CUR_MAX      | M LC_CTYPE
 mblen  	        | race LC_CTYPE
 mbrlen  	| race:mbrlen/!ps LC_CTYPE
 mbrtowc         | LC_CTYPE race:mbrtowc/!ps
@@ -1141,7 +1258,8 @@ nftw        	| cwd   // chdir() in another thread will mess this up
 newlocale  	| env
 nl_langinfo  	| race locale
 perror  	| race:stderr
-posix_fallocate | // The safety in glibc depends on the file system.  Generally safe
+posix_fallocate | // The safety in glibc depends on the file system.    \
+                     Generally safe
 
 printf, fprintf,| LC_NUMERIC locale
 dprintf, sprintf,
@@ -1152,18 +1270,23 @@ profil  	| U
 psiginfo  	| locale
 psignal  	| locale
 ptsname  	| race:ptsname
-putc_unlocked   | race:stream  // Is thread-safe if flockfile() or ftrylockfile() have locked the stream
-putchar_unlocked| race:stdout  // Is thread-safe if flockfile() or ftrylockfile() have locked stdin
+putc_unlocked   | race:stream  // Is thread-safe if flockfile() or          \
+                                  ftrylockfile() have locked the stream
+putchar_unlocked| race:stdout  // Is thread-safe if flockfile() or          \
+                                  ftrylockfile() have locked stdin
 putenv  	| const:env
 putpwent  	| locale
 putspent  	| locale
-pututline       | race:utent sig:ALRM timer  // Obsolete; use pututxline() instead
+pututline       | race:utent sig:ALRM timer Opututxline
 pututxline      | race:utent sig:ALRM timer
 putwchar        | LC_CTYPE
-putwchar_unlocked| race:stdout  // Is thread-safe if flockfile() or ftrylockfile() have locked stdout, but should not be used since not standardized and not widely implemented
+putwchar_unlocked| race:stdout  // Is thread-safe if flockfile() or         \
+                                   ftrylockfile() have locked stdout, but   \
+                                   should not be used since not standardized\
+                                   and not widely implemented
 valloc, pvalloc | init
-qecvt  	        | race:qecvt  // Obsolete; use snprintf() instead
-qfcvt       	| race:qfcvt  // Obsolete; use snprintf() instead
+qecvt  	        | race:qecvt Osnprintf
+qfcvt       	| race:qfcvt Osnprintf
 
 #ifndef __GLIBC__
 rand            | // Problematic and should be avoided; See POSIX Standard
@@ -1205,16 +1328,20 @@ setlogmask  	| race:LogMask
 setnetent  	| race:netent env locale
 setrpcent  	| locale
 setusershell  	| U
-setutent        | race:utent  // Obsolete; use setutxent() instead
+setutent        | race:utent Osetutxent
 setutxent       | race:utent
 sgetspent_r  	| locale
 sgetspent  	| race:sgetspent
 shm_open, shm_unlink| locale
-siginterrupt  	| const:sigintr  // Obsolete; use sigaction(2) with the SA_RESTART flag instead
+siginterrupt  	| const:sigintr                                             \
+                  // Obsolete; use sigaction(2) with the SA_RESTART flag    \
+                     instead
 sleep       	| sig:SIGCHLD/linux
 ssignal  	| sigintr
 
-strcasecmp,     | locale LC_CTYPE LC_COLLATE // The POSIX Standard says results are undefined unless LC_CTYPE is the POSIX locale
+strcasecmp,     | locale LC_CTYPE LC_COLLATE                                \
+                  // The POSIX Standard says results are undefined unless   \
+                     LC_CTYPE is the POSIX locale
 strncasecmp
 
 strcasestr  	| locale
@@ -1231,7 +1358,9 @@ strfmon_l       | LC_MONETARY
 strfromd,       | locale LC_NUMERIC  // Asynchronous unsafe
 strfromf, strfroml
 
-strftime  	| race:tzset env locale LC_TIME  // Use Perl_sv_strftime_tm() or Perl_sv_strftime_ints() instead
+strftime  	| race:tzset env locale LC_TIME                             \
+                  // Use Perl_sv_strftime_tm() or Perl_sv_strftime_ints()   \
+                     instead
 
 strftime_l  	| LC_TIME
 strptime  	| env locale LC_TIME
@@ -1242,7 +1371,8 @@ strtof,
 strtold
 
 strtoimax  	| locale
-strtok  	| race:strtok  // To avoid needing to lock, use strtok_r() instead
+strtok  	| race:strtok                                               \
+                  // To avoid needing to lock, use strtok_r() instead
 wcstod, wcstold,| locale LC_NUMERIC
 wcstof
 
@@ -1262,7 +1392,8 @@ swapcontext  	| race:oucp race:ucp
 sysconf  	| env
 
 #ifndef __GLIBC__
-system          | // Some implementations are not-thread safe; See POSIX Standard
+system          | // Some implementations are not-thread safe; See POSIX    \
+                     Standard
 #endif
 
 syslog, vsyslog | env locale
@@ -1271,14 +1402,16 @@ tdelete, 	| race:rootp
 tfind,
 tsearch
 
-tempnam  	| env  // Obsolete; use mkstemp() or tmpfile() instead
+tempnam  	| env Omkstemp,tmpfile
 timegm  	| env locale
 timelocal  	| env locale
-tmpnam  	| race:tmpnam/!s  // Obsolete; use mkstemp() or tmpfile() instead
-toupper, tolower,| LC_CTYPE  // Use one of the Perl toUPPER family of macros instead
+tmpnam  	| race:tmpnam/!s Omkstemp,tmpfile
+toupper, tolower,| LC_CTYPE                                                 \
+                   // Use one of the Perl toUPPER family of macros instead
 toupper_l, tolower_l
 towctrans       | LC_CTYPE
-towlower, towupper| locale LC_CTYPE  // Use one of the Perl toLOWER family of macros
+towlower, towupper| locale LC_CTYPE                                         \
+                   // Use one of the Perl toLOWER family of macros
 towlower_l, towupper_l| LC_CTYPE
 ttyname  	| race:ttyname  // Use ttyname_r() instead
 ttyslot  	| U
@@ -1304,6 +1437,8 @@ twalk_r  	| race:root  // GNU extension
 // This means that tzset() must have an exclusive lock, as well as the others
 // listed that call it.
 tzset  	        | race:tzset env locale
+tzname, daylight,| V race:tzset
+timezone
 
 ungetwc         | LC_CTYPE
 updwtmp  	| sig:ALRM timer  // Not in POSIX Standard
@@ -1344,6 +1479,10 @@ wcsftime        | LC_CTYPE LC_TIME
 wcsrchr         | LC_CTYPE
 
 __END__
+
+The relevant parts of many of the man page sources for the above data.  Kept
+here as a convenience for checking things
+
        │l64a()    │ Thread safety │ MT-Unsafe race:l64a │
        │asprintf(), vasprintf() │ Thread safety │ MT-Safe locale │
        │atof()    │ Thread safety │ MT-Safe locale │

@@ -156,6 +156,16 @@
  *
  * daylight  MB_CUR_MAX  timezone  tzname  
  *
+ * A few functions are considered obsolete, and should not be used, at least
+ * in new code.  These are:
+ *
+ * asctime    ctime_r   fcvt           getpw      pututline  setutent  
+ * asctime_r  ecvt      gethostbyaddr  getutent   qecvt      tempnam   
+ * ctime      endutent  gethostbyname  getutline  qfcvt      tmpnam    
+ *
+ * Comments at their respective macro definitions below give any preferred
+ * alternatives.
+ *
  * A few functions are considered totally unsuited for use in a multi-thread
  * environment.  These must be called only during single-thread operation,
  * hence no UNLOCK wrapper macro is generated for these, and the generated
@@ -692,7 +702,7 @@
 
 #ifndef ENDUSERSHELL_LOCK
 #  define ENDUSERSHELL_LOCK                              \
-#    error endusershell not suitable for multi-threaded operation
+#    error_endusershell_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef ENDUTENT_LOCK
@@ -762,12 +772,12 @@
 
 #ifndef ETHER_ATON_LOCK
 #  define ETHER_ATON_LOCK                              \
-#    error ether_aton not suitable for multi-threaded operation
+#    error_ether_aton_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef ETHER_NTOA_LOCK
 #  define ETHER_NTOA_LOCK                              \
-#    error ether_ntoa not suitable for multi-threaded operation
+#    error_ether_ntoa_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef EXECLP_LOCK
@@ -1097,12 +1107,12 @@
 
 #ifndef FTS_CHILDREN_LOCK
 #  define FTS_CHILDREN_LOCK                              \
-#    error fts_children not suitable for multi-threaded operation
+#    error_fts_children_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef FTS_READ_LOCK
 #  define FTS_READ_LOCK                              \
-#    error fts_read not suitable for multi-threaded operation
+#    error_fts_read_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef FTW_LOCK
@@ -1171,7 +1181,7 @@
 
 #ifndef GETALIASBYNAME_LOCK
 #  define GETALIASBYNAME_LOCK                              \
-#    error getaliasbyname not suitable for multi-threaded operation
+#    error_getaliasbyname_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef GETALIASBYNAME_R_LOCK
@@ -1181,7 +1191,7 @@
 
 #ifndef GETALIASENT_LOCK
 #  define GETALIASENT_LOCK                              \
-#    error getaliasent not suitable for multi-threaded operation
+#    error_getaliasent_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef GETALIASENT_R_LOCK
@@ -1576,7 +1586,7 @@
 
 #ifndef GETRPCBYNAME_LOCK
 #  define GETRPCBYNAME_LOCK                              \
-#    error getrpcbyname not suitable for multi-threaded operation
+#    error_getrpcbyname_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef GETRPCBYNAME_R_LOCK
@@ -1586,7 +1596,7 @@
 
 #ifndef GETRPCBYNUMBER_LOCK
 #  define GETRPCBYNUMBER_LOCK                              \
-#    error getrpcbynumber not suitable for multi-threaded operation
+#    error_getrpcbynumber_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef GETRPCBYNUMBER_R_LOCK
@@ -1596,7 +1606,7 @@
 
 #ifndef GETRPCENT_LOCK
 #  define GETRPCENT_LOCK                              \
-#    error getrpcent not suitable for multi-threaded operation
+#    error_getrpcent_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef GETRPCENT_R_LOCK
@@ -1686,7 +1696,7 @@
 
 #ifndef GETUSERSHELL_LOCK
 #  define GETUSERSHELL_LOCK                              \
-#    error getusershell not suitable for multi-threaded operation
+#    error_getusershell_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef GETUTENT_LOCK
@@ -2561,12 +2571,12 @@
 
 #ifndef MTRACE_LOCK
 #  define MTRACE_LOCK                              \
-#    error mtrace not suitable for multi-threaded operation
+#    error_mtrace_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef MUNTRACE_LOCK
 #  define MUNTRACE_LOCK                              \
-#    error muntrace not suitable for multi-threaded operation
+#    error_muntrace_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef NAN_LOCK
@@ -2644,7 +2654,7 @@
 
 #ifndef PROFIL_LOCK
 #  define PROFIL_LOCK                              \
-#    error profil not suitable for multi-threaded operation
+#    error_profil_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef PSIGINFO_LOCK
@@ -2814,12 +2824,12 @@
 
 #ifndef RCMD_LOCK
 #  define RCMD_LOCK                              \
-#    error rcmd not suitable for multi-threaded operation
+#    error_rcmd_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef RCMD_AF_LOCK
 #  define RCMD_AF_LOCK                              \
-#    error rcmd_af not suitable for multi-threaded operation
+#    error_rcmd_af_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef READDIR_LOCK
@@ -2831,14 +2841,14 @@
 
    /* re_comp() Obsolete; use regcomp() instead */
 #  define RE_COMP_LOCK                              \
-#    error re_comp not suitable for multi-threaded operation
+#    error_re_comp_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef RE_EXEC_LOCK
 
    /* re_exec() Obsolete; use regexec() instead */
 #  define RE_EXEC_LOCK                              \
-#    error re_exec not suitable for multi-threaded operation
+#    error_re_exec_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef REGCOMP_LOCK
@@ -2890,14 +2900,14 @@
 
    /* rexec() Obsolete; use rcmd() instead */
 #  define REXEC_LOCK                              \
-#    error rexec not suitable for multi-threaded operation
+#    error_rexec_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef REXEC_AF_LOCK
 
    /* rexec_af() Obsolete; use rcmd() instead */
 #  define REXEC_AF_LOCK                              \
-#    error rexec_af not suitable for multi-threaded operation
+#    error_rexec_af_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef RPMATCH_LOCK
@@ -3096,7 +3106,7 @@
 
 #ifndef SETUSERSHELL_LOCK
 #  define SETUSERSHELL_LOCK                              \
-#    error setusershell not suitable for multi-threaded operation
+#    error_setusershell_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef SETUTENT_LOCK
@@ -3540,7 +3550,7 @@
 
 #ifndef TTYSLOT_LOCK
 #  define TTYSLOT_LOCK                              \
-#    error ttyslot not suitable for multi-threaded operation
+#    error_ttyslot_not_suitable_for_multi-threaded_operation
 #endif
 
 #ifndef TWALK_LOCK

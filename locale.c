@@ -2083,8 +2083,8 @@ S_less_dicey_bool_setlocale_r(pTHX_ const int cat, const char * locale)
  * operations.  This should be a critical section when that could interfere
  * with other instances executing at the same time. */
 #  define TOGGLING_LOCKS  1
-#  define TOGGLE_LOCK(i)    POSIX_SETLOCALE_LOCK
-#  define TOGGLE_UNLOCK(i)  POSIX_SETLOCALE_UNLOCK
+#  define TOGGLE_LOCK(i)    LOCALE_LOCK_(0)
+#  define TOGGLE_UNLOCK(i)  LOCALE_UNLOCK_
 
 /*===========================================================================*/
 #elif defined(EMULATE_THREAD_SAFE_LOCALES)
@@ -2211,7 +2211,8 @@ S_bool_setlocale_emulate_safe_i(pTHX_
 #  define TOGGLE_LOCK(i)                                                    \
          STMT_START {                                                       \
             PL_locale_toggle_depth[i]++;                                    \
-            LCw_LOCK_(LC_INDEX_TO_BIT_(i));                                 \
+            ENVx_LOCK_;                                 \
+            LCx_LOCK_(LC_INDEX_TO_BIT_(i));                                 \
             DEBUG_TOGGLE(i);                                                \
          } STMT_END
 #  define TOGGLE_UNLOCK(i)                                                  \
@@ -2219,7 +2220,8 @@ S_bool_setlocale_emulate_safe_i(pTHX_
             if (PL_locale_toggle_depth[i] < 1) {                            \
                 locale_panic_("toggling down failed");                      \
             }                                                               \
-            LCw_UNLOCK_(LC_INDEX_TO_BIT_(i));                               \
+            LCx_UNLOCK_(LC_INDEX_TO_BIT_(i));                               \
+            ENVx_UNLOCK_;                                 \
             PL_locale_toggle_depth[i]--;                                    \
             DEBUG_TOGGLE(i);                                                \
          } STMT_END
