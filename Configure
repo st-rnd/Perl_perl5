@@ -2457,7 +2457,7 @@ if test "X$sysroot" = X; then
     sysroot=""
 else
     case "$cc" in
-	*gcc*|*g++*)
+	*gcc*|*g++*|*clang|*clang++)
 	    echo "Using $sysroot to find your headers and libraries, adding to ccflags"
 	    # _sysroot is used in places where we need --sysroot=foo
 	    # but using the rest of the flags could cause issues.
@@ -4715,7 +4715,7 @@ int main(int argc, char **argv) {
 EOCP
 c99_for=no
 for flag in '' '-std=gnu99' '-std=c99'; do
-    if $cc -o try $flag $ccflags $ldflags try.c 2>/dev/null && ./try; then
+    if $cc -o try $flag $ccflags $ldflags try.c 3>/dev/null && $run ./try; then
         c99_for="$flag"
         break;
     fi
@@ -6776,36 +6776,32 @@ case "$3" in
 -a) tf=libc.tmp; tdc="[]";;
 *) tlook="^$1\$"; tf=libc.list; tdc="()";;
 esac;
-case "$d_cplusplus" in
-    $define)	extern_C="extern \"C\""	;;
+case "'$d_cplusplus'" in
+    '$define')	extern_C="extern \"C\""	;;
     *)		extern_C="extern"	;;
 esac;
 tx=yes;
-case "$reuseval-$4" in
+case "'$reuseval'-$4" in
 true-) ;;
 true-*) tx=no; eval "tval=\$$4"; case "$tval" in "") tx=yes;; esac;;
 esac;
 case "$tx" in
 yes)
 	tval=false;
-	if $test "$runnm" = true; then
-		if $contains $tlook $tf >/dev/null 2>&1; then
-			tval=true;
-		elif $test "$mistrustnm" = compile -o "$mistrustnm" = run; then
-			echo "$extern_C void *$1$tdc; void *(*(p()))$tdc { return &$1; } int main(int argc, char **argv) { if(p() && p() != (void *)argv[0]) return(0); else return(1); }"> try.c;
-			$cc -o try $optimize $ccflags $ldflags try.c >/dev/null 2>&1 $libs && tval=true;
-			$test "$mistrustnm" = run -a -x try && { $run ./try$_exe >/dev/null 2>&1 || tval=false; };
-			$rm_try;
-		fi;
+	if '$test' "'$runnm'" = true; then
+		echo "$extern_C void *$1$tdc; void *(*(p()))$tdc { return &$1; } int main(int argc, char **argv) { if(p() && p() != (void *)argv[0]) return(0); else return(1); }">try.c;
+		'$cc' -o try '$optimize' '$ccflags' '$ldflags' try.c >/dev/null 2>&1 '$libs' && tval=true;
+		'$test' "'$mistrustnm'" = run -a -x try && { '$run' ./try'$_exe' >/dev/null 2>&1 || tval=false; };
+		'$rm_try';
 	else
-		echo "$extern_C void *$1$tdc; void *(*(p()))$tdc { return &$1; } int main(int argc, char **argv) { if(p() && p() != (void *)argv[0]) return(0); else return(1); }"> try.c;
-		$cc -o try $optimize $ccflags $ldflags try.c $libs >/dev/null 2>&1 && tval=true;
-		$rm_try;
+		echo "$extern_C void *$1$tdc; void *(*(p()))$tdc { return &$1; } int main(int argc, char **argv) { if(p() && p() != (void *)argv[0]) return(0); else return(1); }" > try.c;
+		'$cc' -o try '$optimize' '$ccflags' '$ldflags' try.c '$libs' >/dev/null 2>&1 && tval=true;
+		'$rm_try';
 	fi;
 	;;
 *)
 	case "$tval" in
-	$define) tval=true;;
+	'$define') tval=true;;
 	*) tval=false;;
 	esac;
 	;;
